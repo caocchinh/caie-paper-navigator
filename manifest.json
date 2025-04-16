@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Past Paper Search Tool",
+  "version": "1.0.0",
+  "description": "A tool to search for past papers",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "icons": {
+    "64": "vectr.png"
+  }
+}
