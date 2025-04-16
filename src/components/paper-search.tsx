@@ -9,7 +9,6 @@ import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {cn} from "@/lib/utils";
 
 const formSchema = z.object({
   curriculum: z.string(),
@@ -50,9 +49,10 @@ interface PaperSearchProps {
     showDialog?: boolean
   ) => void;
   isClearData: boolean;
+  setIsClearData: (isClearData: boolean) => void;
 }
 
-export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSearchProps) {
+export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClearData}: PaperSearchProps) {
   const [quickCode, setQuickCode] = useState<string>("");
   const [fullYear, setFullYear] = useState<string>("");
   const [quickCodeError, setQuickCodeError] = useState<string>("");
@@ -140,8 +140,9 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSear
       } else {
         localStorage.clear();
       }
+      setIsClearData(false);
     }
-  }, [isClearData, form]);
+  }, [isClearData, form, setIsClearData]);
 
   // Generate quick code from form values (pure function without state updates)
   const generateQuickCode = useCallback((values: FormValues) => {
@@ -529,6 +530,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSear
     const newValue = numValue === 0 || numValue === 9 ? "1" : ((numValue + 1) % 10).toString();
     form.setValue("paperType", newValue);
     form.clearErrors("paperType");
+    form.trigger("paperType");
   };
 
   const decrementPaperType = () => {
@@ -538,6 +540,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSear
     const newValue = numValue === 0 || numValue === 1 ? "9" : (numValue - 1 || 9).toString();
     form.setValue("paperType", newValue);
     form.clearErrors("paperType");
+    form.trigger("paperType");
   };
 
   const handleVariantChange = (value: string) => {
@@ -545,7 +548,20 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSear
     const numericValue = value.replace(/\D/g, "");
     // Restrict to 1 digit
     const oneDigit = numericValue.slice(0, 1);
+
+    // Check if paper type is 0
+    if (oneDigit === "0") {
+      form.setError("variant", {
+        type: "manual",
+        message: "Variant cannot be 0",
+      });
+    } else {
+      form.clearErrors("variant");
+    }
+
     form.setValue("variant", oneDigit);
+
+    // Only allow numeric input
   };
 
   const incrementVariant = () => {
@@ -916,13 +932,10 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSear
           <div className="mt-4">
             <button
               type="submit"
-              className={cn(
-                "w-full p-2 bg-blue-500 text-white rounded-md cursor-pointer",
-                !isFormValid() || (form.formState.isSubmitting && "opacity-50 cursor-not-allowed")
-              )}
+              className={`w-full p-2 text-white rounded-md cursor-pointer bg-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
               disabled={!isFormValid() || form.formState.isSubmitting}
             >
-              Find Paper
+              {!isFormValid() ? "Please fill all fields" : "Find Paper"}
             </button>
           </div>
         </form>

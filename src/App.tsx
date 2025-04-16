@@ -2,7 +2,7 @@ import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {PaperSearch} from "@/components/paper-search";
-import {ExternalLink} from "lucide-react";
+import {ExternalLink, Trash} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 // Paper details interface
@@ -66,6 +66,7 @@ export function App() {
             paperType="qp"
             onLinkGenerated={handlePaperGenerated}
             isClearData={isClearData}
+            setIsClearData={setIsClearData}
           />
         </CardContent>
       </Card>
@@ -149,6 +150,7 @@ export function App() {
                   }}
                 >
                   Clear Data
+                  <Trash size={18} />
                 </Button>
               </div>
 
