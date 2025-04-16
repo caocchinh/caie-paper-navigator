@@ -190,6 +190,9 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
   // Load saved form values when component mounts
   useEffect(() => {
     const loadStoredValues = () => {
+      // Only load stored values on initial mount
+      if (hasMountedRef.current) return;
+
       try {
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
@@ -337,42 +340,54 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
     };
 
     loadStoredValues();
+    // Set hasMountedRef to true after initial load
+    hasMountedRef.current = true;
   }, [form, submitFormSafely, paperType, onLinkGenerated, generateQuickCode]);
 
   // Save form values whenever they change
   useEffect(() => {
-    const saveFormValues = (values: Partial<FormValues>) => {
-      try {
-        if (values && Object.keys(values).length > 0) {
-          // Filter out empty values
-          const validValues: Record<string, string> = {};
-          Object.entries(values).forEach(([key, value]) => {
-            if (value && typeof value === "string" && value.trim() !== "") {
-              validValues[key] = value;
-            }
-          });
+    // Debounce storage save to prevent conflicts with user input
+    let saveTimeout: NodeJS.Timeout;
 
-          if (Object.keys(validValues).length > 0) {
-            if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-              chrome.storage.local.set({formValues: validValues});
-            } else {
-              // Fallback to localStorage
-              localStorage.setItem("formValues", JSON.stringify(validValues));
+    const saveFormValues = (values: Partial<FormValues>) => {
+      clearTimeout(saveTimeout);
+
+      saveTimeout = setTimeout(() => {
+        try {
+          if (values && Object.keys(values).length > 0) {
+            // Filter out empty values
+            const validValues: Record<string, string> = {};
+            Object.entries(values).forEach(([key, value]) => {
+              if (value && typeof value === "string" && value.trim() !== "") {
+                validValues[key] = value;
+              }
+            });
+
+            if (Object.keys(validValues).length > 0) {
+              if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({formValues: validValues});
+              } else {
+                // Fallback to localStorage
+                localStorage.setItem("formValues", JSON.stringify(validValues));
+              }
             }
           }
+        } catch (error) {
+          console.error("Error saving form values:", error);
         }
-      } catch (error) {
-        console.error("Error saving form values:", error);
-      }
+      }, 500); // Add debounce delay
     };
 
     const subscription = form.watch((values) => {
-      if (values) {
+      if (values && hasMountedRef.current) {
         saveFormValues(values);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(saveTimeout);
+    };
   }, [form]);
 
   // Track paperType changes
