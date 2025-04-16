@@ -5,24 +5,24 @@ import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {CURRICULUMS, SESSIONS, SUBJECTS} from "@/lib/constants";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
+import {cn} from "@/lib/utils";
 
 const formSchema = z.object({
   curriculum: z.string(),
   subject: z.string(),
   paperType: z
     .string()
-    .length(1, {message: "Paper type must be 1 digit"})
+    .length(1, {message: "Please enter a valid paper type"})
     .refine((val) => val !== "0", {message: "Paper type cannot be 0"}),
-  variant: z.string().length(1, {message: "Variant must be 1 digit"}),
+  variant: z.string().length(1, {message: "Please enter a valid variant"}),
   session: z.string(),
   year: z
     .string()
-    .length(2, {message: "Year must be 2 digits"})
+    .length(2, {message: "Please enter a valid year"})
     .refine(
       (val) => {
         const yearNum = parseInt(`20${val}`);
@@ -49,9 +49,10 @@ interface PaperSearchProps {
       | undefined,
     showDialog?: boolean
   ) => void;
+  isClearData: boolean;
 }
 
-export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
+export function PaperSearch({paperType, onLinkGenerated, isClearData}: PaperSearchProps) {
   const [quickCode, setQuickCode] = useState<string>("");
   const [fullYear, setFullYear] = useState<string>("");
   const [quickCodeError, setQuickCodeError] = useState<string>("");
@@ -128,6 +129,20 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
     return "";
   };
 
+  useEffect(() => {
+    if (isClearData) {
+      form.reset();
+      setQuickCode("");
+      setFullYear("");
+      setQuickCodeError("");
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({formValues: null});
+      } else {
+        localStorage.clear();
+      }
+    }
+  }, [isClearData, form]);
+
   // Generate quick code from form values (pure function without state updates)
   const generateQuickCode = useCallback((values: FormValues) => {
     const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
@@ -196,71 +211,77 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
       try {
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
-            if (result.formValues) {
-              // Apply each field individually to ensure proper handling
-              form.setValue("curriculum", result.formValues.curriculum || "cambridge-international-a-level");
+            try {
+              if (result.formValues) {
+                // Apply each field individually to ensure proper handling
+                form.setValue("curriculum", result.formValues.curriculum || "cambridge-international-a-level");
 
-              // Set subject after a short delay to ensure curriculum is applied
-              setTimeout(() => {
-                if (result.formValues?.subject) {
-                  form.setValue("subject", result.formValues.subject);
-                }
-
-                // Set other values
-                if (result.formValues?.paperType) {
-                  form.setValue("paperType", result.formValues.paperType);
-                }
-                if (result.formValues?.variant) {
-                  form.setValue("variant", result.formValues.variant);
-                }
-                if (result.formValues?.session) {
-                  form.setValue("session", result.formValues.session);
-                }
-                if (result.formValues?.year) {
-                  form.setValue("year", result.formValues.year);
-                  setFullYear(result.formValues.year.length === 2 ? `20${result.formValues.year}` : result.formValues.year);
-                }
-
-                // Trigger form validation
-                form.trigger();
-
-                // Generate the URL but don't show the dialog
-                const values = form.getValues();
-                const hasRequiredValues = values.subject && values.paperType && values.variant && values.session && values.year;
-
-                if (hasRequiredValues) {
-                  const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
-                  if (selectedSubject) {
-                    const subjectCode = selectedSubject.code;
-                    const sessionId = values.session;
-                    const year = `20${values.year}`;
-                    const shortYear = values.year;
-                    const paperNumber = `${values.paperType}${values.variant}`;
-                    const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
-
-                    // Generate quick code
-                    const newQuickCode = generateQuickCode(values);
-                    setQuickCode(newQuickCode);
-
-                    // Find session label
-                    const sessionObj = SESSIONS.find((s) => s.id === sessionId);
-                    const sessionLabel = sessionObj ? sessionObj.label : "";
-
-                    // Generate the URL and details, but pass false for showDialog
-                    onLinkGenerated(
-                      url,
-                      {
-                        subjectCode: selectedSubject.code,
-                        subjectName: selectedSubject.label,
-                        paperNumber: paperNumber,
-                        session: sessionLabel,
-                        year: shortYear,
-                      },
-                      false
-                    ); // Don't show dialog on initial load
+                // Set subject after a short delay to ensure curriculum is applied
+                setTimeout(() => {
+                  if (result.formValues?.subject) {
+                    form.setValue("subject", result.formValues.subject);
                   }
-                }
-              }, 100);
+
+                  // Set other values
+                  if (result.formValues?.paperType) {
+                    form.setValue("paperType", result.formValues.paperType);
+                    form.trigger("paperType");
+                  }
+                  if (result.formValues?.variant) {
+                    form.setValue("variant", result.formValues.variant);
+                    form.trigger("variant");
+                  }
+                  if (result.formValues?.session) {
+                    form.setValue("session", result.formValues.session);
+                  }
+                  if (result.formValues?.year) {
+                    form.setValue("year", result.formValues.year);
+                    setFullYear(result.formValues.year.length === 2 ? `20${result.formValues.year}` : result.formValues.year);
+                  }
+
+                  // Trigger form validation
+                  form.trigger();
+
+                  // Generate the URL but don't show the dialog
+                  const values = form.getValues();
+                  const hasRequiredValues = values.subject && values.paperType && values.variant && values.session && values.year;
+
+                  if (hasRequiredValues) {
+                    const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
+                    if (selectedSubject) {
+                      const subjectCode = selectedSubject.code;
+                      const sessionId = values.session;
+                      const year = `20${values.year}`;
+                      const shortYear = values.year;
+                      const paperNumber = `${values.paperType}${values.variant}`;
+                      const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
+
+                      // Generate quick code
+                      const newQuickCode = generateQuickCode(values);
+                      setQuickCode(newQuickCode);
+
+                      // Find session label
+                      const sessionObj = SESSIONS.find((s) => s.id === sessionId);
+                      const sessionLabel = sessionObj ? sessionObj.label : "";
+
+                      // Generate the URL and details, but pass false for showDialog
+                      onLinkGenerated(
+                        url,
+                        {
+                          subjectCode: selectedSubject.code,
+                          subjectName: selectedSubject.label,
+                          paperNumber: paperNumber,
+                          session: sessionLabel,
+                          year: shortYear,
+                        },
+                        false
+                      ); // Don't show dialog on initial load
+                    }
+                  }
+                }, 100);
+              }
+            } catch (error) {
+              console.error("Error parsing saved form values:", error);
             }
           });
         } else {
@@ -279,9 +300,11 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
                 }
                 if (parsedValues.paperType) {
                   form.setValue("paperType", parsedValues.paperType);
+                  form.trigger("paperType");
                 }
                 if (parsedValues.variant) {
                   form.setValue("variant", parsedValues.variant);
+                  form.trigger("variant");
                 }
                 if (parsedValues.session) {
                   form.setValue("session", parsedValues.session);
@@ -329,8 +352,8 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
                   }
                 }
               }, 100);
-            } catch (e) {
-              console.error("Error parsing saved form values:", e);
+            } catch (error) {
+              console.error("Error parsing saved form values:", error);
             }
           }
         }
@@ -365,10 +388,28 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
 
             if (Object.keys(validValues).length > 0) {
               if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-                chrome.storage.local.set({formValues: validValues});
+                // Get existing values first to avoid wiping out values
+                chrome.storage.local.get("formValues", (result) => {
+                  const existingValues = result.formValues || {};
+                  const updatedValues = {...existingValues, ...validValues};
+                  chrome.storage.local.set({formValues: updatedValues});
+                });
               } else {
-                // Fallback to localStorage
-                localStorage.setItem("formValues", JSON.stringify(validValues));
+                // For localStorage, get existing values first before saving
+                try {
+                  const savedValues = localStorage.getItem("formValues");
+                  const existingValues = savedValues ? JSON.parse(savedValues) : {};
+                  const updatedValues = {...existingValues, ...validValues};
+                  localStorage.setItem("formValues", JSON.stringify(updatedValues));
+                } catch (error) {
+                  console.error("Error parsing or saving to localStorage:", error);
+                  // Fallback to direct save attempt
+                  try {
+                    localStorage.setItem("formValues", JSON.stringify(validValues));
+                  } catch (fallbackError) {
+                    console.error("Fallback localStorage save failed:", fallbackError);
+                  }
+                }
               }
             }
           }
@@ -512,6 +553,7 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
     const numValue = currentValue ? parseInt(currentValue) : 0;
     const newValue = ((numValue + 1) % 10).toString();
     form.setValue("variant", newValue);
+    form.clearErrors("variant");
   };
 
   const decrementVariant = () => {
@@ -519,6 +561,7 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
     const numValue = currentValue ? parseInt(currentValue) : 0;
     const newValue = ((numValue + 9) % 10).toString();
     form.setValue("variant", newValue);
+    form.clearErrors("variant");
   };
 
   // Check if all form fields are valid
@@ -628,7 +671,7 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="space-y-3 mb-5">
         <Label htmlFor="quick-code">Quick Paper Code</Label>
         <div className="flex justify-center gap-2">
@@ -659,242 +702,228 @@ export function PaperSearch({paperType, onLinkGenerated}: PaperSearchProps) {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(submitFormSafely)}
-          className="space-y-4"
+          className="space-y-4 w-full"
         >
-          <FormField
-            control={form.control}
-            name="curriculum"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Curriculum</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || ""}
-                  defaultValue={field.value}
+          <div>
+            <label
+              htmlFor="curriculum"
+              className="block text-sm font-medium mb-1"
+            >
+              Curriculum
+            </label>
+            <select
+              id="curriculum"
+              className="w-full p-2 border rounded-md cursor-pointer"
+              value={form.getValues().curriculum || ""}
+              onChange={(e) => {
+                form.setValue("curriculum", e.target.value);
+                form.trigger("curriculum");
+              }}
+            >
+              <option
+                value=""
+                disabled
+              >
+                Select curriculum
+              </option>
+              {CURRICULUMS.map((curriculum) => (
+                <option
+                  key={curriculum.id}
+                  value={curriculum.id}
                 >
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select curriculum" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {CURRICULUMS.map((curriculum) => (
-                      <SelectItem
-                        key={curriculum.id}
-                        value={curriculum.id}
-                      >
-                        {curriculum.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  {curriculum.label}
+                </option>
+              ))}
+            </select>
+            {form.formState.errors.curriculum && <p className="text-xs text-red-500 mt-1">{form.formState.errors.curriculum.message}</p>}
+          </div>
 
-          <FormField
-            control={form.control}
-            name="subject"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Subject</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || ""}
-                  defaultValue={field.value}
+          <div>
+            <label
+              htmlFor="subject"
+              className="block text-sm font-medium mb-1"
+            >
+              Subject
+            </label>
+            <select
+              id="subject"
+              className="w-full p-2 border rounded-md cursor-pointer"
+              value={form.getValues().subject || ""}
+              onChange={(e) => {
+                form.setValue("subject", e.target.value);
+                form.trigger("subject");
+              }}
+            >
+              <option
+                value=""
+                disabled
+              >
+                Select subject
+              </option>
+              {filteredSubjects.map((subject) => (
+                <option
+                  key={subject.id}
+                  value={subject.id}
                 >
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {filteredSubjects.map((subject) => (
-                      <SelectItem
-                        key={subject.id}
-                        value={subject.id}
-                      >
-                        {subject.label} ({subject.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  {subject.label} ({subject.code})
+                </option>
+              ))}
+            </select>
+            {form.formState.errors.subject && <p className="text-xs text-red-500 mt-1">{form.formState.errors.subject.message}</p>}
+          </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="paperType"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Paper Type</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={decrementPaperType}
-                          className="h-10 w-10"
-                        >
-                          -
-                        </Button>
-                        <Input
-                          className="mx-2 text-center"
-                          type="text"
-                          placeholder="e.g. 4"
-                          value={field.value}
-                          onChange={(e) => handlePaperTypeChange(e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={incrementPaperType}
-                          className="h-10 w-10"
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <div className="grid grid-cols-1 gap-4 w-full">
+            <div className="flex items-center justify-between gap-4">
+              <div className="w-1/2">
+                <label
+                  htmlFor="paperType"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Paper Type
+                </label>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    onClick={decrementPaperType}
+                  >
+                    -
+                  </button>
+                  <input
+                    id="paperType"
+                    className="mx-2 text-center flex-grow h-10 border rounded-md w-full "
+                    type="text"
+                    placeholder="e.g. 4"
+                    value={form.getValues().paperType || ""}
+                    onChange={(e) => handlePaperTypeChange(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    onClick={incrementPaperType}
+                  >
+                    +
+                  </button>
+                </div>
+                {form.formState.errors.paperType && <p className="text-xs text-red-500 mt-1">{form.formState.errors.paperType.message}</p>}
+              </div>
 
-              <FormField
-                control={form.control}
-                name="variant"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Variant</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={decrementVariant}
-                          className="h-10 w-10"
-                        >
-                          -
-                        </Button>
-                        <Input
-                          className="mx-2 text-center"
-                          type="text"
-                          placeholder="e.g. 2"
-                          value={field.value}
-                          onChange={(e) => handleVariantChange(e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={incrementVariant}
-                          className="h-10 w-10"
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="w-1/2">
+                <label
+                  htmlFor="variant"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Variant
+                </label>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    onClick={decrementVariant}
+                  >
+                    -
+                  </button>
+                  <input
+                    id="variant"
+                    className="mx-2 text-center flex-grow h-10 border rounded-md w-full"
+                    type="text"
+                    placeholder="e.g. 2"
+                    value={form.getValues().variant || ""}
+                    onChange={(e) => handleVariantChange(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    onClick={incrementVariant}
+                  >
+                    +
+                  </button>
+                </div>
+                {form.formState.errors.variant && <p className="text-xs text-red-500 mt-1">{form.formState.errors.variant.message}</p>}
+              </div>
             </div>
 
-            <FormField
-              control={form.control}
-              name="session"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Exam Season</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                    defaultValue={field.value}
+            <div>
+              <label
+                htmlFor="session"
+                className="block text-sm font-medium mb-1"
+              >
+                Exam Season
+              </label>
+              <select
+                id="session"
+                className="w-full p-2 border rounded-md cursor-pointer"
+                value={form.getValues().session || ""}
+                onChange={(e) => {
+                  form.setValue("session", e.target.value);
+                  form.trigger("session");
+                }}
+              >
+                <option
+                  value=""
+                  disabled
+                >
+                  Select season
+                </option>
+                {SESSIONS.map((session) => (
+                  <option
+                    key={session.id}
+                    value={session.id}
                   >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select season" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {SESSIONS.map((session) => (
-                        <SelectItem
-                          key={session.id}
-                          value={session.id}
-                        >
-                          {session.label} - {session.fullName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    {session.label} - {session.fullName}
+                  </option>
+                ))}
+              </select>
+              {form.formState.errors.session && <p className="text-xs text-red-500 mt-1">{form.formState.errors.session.message}</p>}
+            </div>
 
-            <FormField
-              control={form.control}
-              name="year"
-              render={({field}) => {
-                // Use field for React Hook Form integration
-                return (
-                  <FormItem>
-                    <FormLabel>Year</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={decrementYear}
-                          className="h-10 w-10"
-                        >
-                          -
-                        </Button>
-                        <Input
-                          className="mx-2 text-center"
-                          type="text"
-                          placeholder="e.g. 2020"
-                          value={fullYear}
-                          onChange={(e) => handleYearChange(e.target.value)}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={incrementYear}
-                          className="h-10 w-10"
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground">Enter full year (e.g. 2020).</p>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
+            <div>
+              <label
+                htmlFor="year"
+                className="block text-sm font-medium mb-1"
+              >
+                Year
+              </label>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                  onClick={decrementYear}
+                >
+                  -
+                </button>
+                <input
+                  id="year"
+                  className="mx-2 text-center flex-grow h-10 border rounded-md"
+                  type="text"
+                  placeholder="e.g. 2020"
+                  value={fullYear}
+                  onChange={(e) => handleYearChange(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                  onClick={incrementYear}
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">Enter full year (e.g. 2020).</p>
+              {form.formState.errors.year && <p className="text-xs text-red-500 mt-1">{form.formState.errors.year.message}</p>}
+            </div>
           </div>
 
           <div className="mt-4">
-            <Button
+            <button
               type="submit"
-              className="w-full cursor-pointer"
+              className={cn(
+                "w-full p-2 bg-blue-500 text-white rounded-md cursor-pointer",
+                !isFormValid() || (form.formState.isSubmitting && "opacity-50 cursor-not-allowed")
+              )}
               disabled={!isFormValid() || form.formState.isSubmitting}
             >
               Find Paper
-            </Button>
+            </button>
           </div>
         </form>
       </Form>

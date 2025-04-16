@@ -18,6 +18,7 @@ interface PaperDetails {
 export function App() {
   const [paperDetails, setPaperDetails] = useState<PaperDetails | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isClearData, setIsClearData] = useState(false);
 
   // Handle paper details generation
   const handlePaperGenerated = (link: string | null, details?: Omit<PaperDetails, "link">, showDialog: boolean = true) => {
@@ -64,6 +65,7 @@ export function App() {
           <PaperSearch
             paperType="qp"
             onLinkGenerated={handlePaperGenerated}
+            isClearData={isClearData}
           />
         </CardContent>
       </Card>
@@ -137,6 +139,16 @@ export function App() {
                 >
                   <ExternalLink size={18} />
                   Open Both
+                </Button>
+                <Button
+                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
+                  onClick={() => {
+                    setPaperDetails(null);
+                    setIsClearData(true);
+                    setDialogOpen(false);
+                  }}
+                >
+                  Clear Data
                 </Button>
               </div>
 
