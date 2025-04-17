@@ -72,7 +72,7 @@ export function App() {
   };
 
   return (
-    <div className="mx-auto">
+    <div className="min-h-screen flex flex-col justify-between w-full items-center bg-white dark:bg-primary-foreground">
       {showPinRecommendation && (
         <div className="bg-blue-50 p-3 rounded-md flex items-center justify-between">
           <p className="text-sm text-blue-700">
@@ -88,7 +88,7 @@ export function App() {
         </div>
       )}
 
-      <Card className="mx-auto border-none shadow-none !pb-8">
+      <Card className="mx-auto border-none shadow-none !pb-8 w-full">
         <CardContent className="!p-0">
           <h2 className="text-xl font-semibold mb-6 text-center bg-gradient-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
             <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level Past Papers Search
@@ -196,8 +196,8 @@ export function App() {
         </DialogContent>
       </Dialog>
 
-      <div className="text-center flex items-center flex-col justify-center gap-4 bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
-        <div className="flex items-center justify-center gap-2">
+      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-gray-900 rounded-lg p-4 w-full">
+        <div className="flex items-center justify-center gap-2 w-full bg-gray-100 dark:bg-gray-900">
           <a
             href="https://www.instagram.com/vectr.vcp/"
             target="_blank"
