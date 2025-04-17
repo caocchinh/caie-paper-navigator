@@ -4,7 +4,7 @@ import {Card, CardContent} from "@/components/ui/card";
 import {PaperSearch} from "@/components/paper-search";
 import {ExternalLink, Github, Trash, X} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-
+import { ModeToggle } from "@/components/mode-toggle";
 // Paper details interface
 interface PaperDetails {
   link: string;
@@ -88,7 +88,7 @@ export function App() {
         </div>
       )}
 
-      <Card className="mx-auto border-none shadow-none">
+      <Card className="mx-auto border-none shadow-none !pb-8">
         <CardContent className="!p-0">
           <h2 className="text-xl font-semibold mb-6 text-center bg-gradient-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
             <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level Past Papers Search
@@ -109,7 +109,7 @@ export function App() {
         onOpenChange={setDialogOpen}
       >
         <DialogContent
-          className="w-[90%]"
+          className="w-[90%] "
           aria-describedby="paper-details-description"
         >
           <DialogHeader>
@@ -196,7 +196,7 @@ export function App() {
         </DialogContent>
       </Dialog>
 
-      <div className="my-8 text-center">
+      <div className="text-center flex items-center flex-col justify-center gap-4 bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
         <div className="flex items-center justify-center gap-2">
           <a
             href="https://www.instagram.com/vectr.vcp/"
@@ -222,6 +222,8 @@ export function App() {
             <Github size={20} />
           </a>
         </div>
+        <ModeToggle />
+
       </div>
     </div>
   );
