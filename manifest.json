@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Past Paper Search Tool",
   "version": "1.0.0",
-  "description": "A tool to search for past papers",
+  "description": "A tool to search for CAIE IGCSE/A-Level past papers",
   "permissions": ["storage"],
   "action": {
     "default_popup": "index.html"
