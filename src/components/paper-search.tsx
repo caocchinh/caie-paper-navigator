@@ -849,7 +849,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
           </div>
 
           <div className="grid grid-cols-1 gap-4 w-full">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-6">
               <div className="w-1/2">
                 <label
                   htmlFor="paperType"
@@ -860,7 +860,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
                     onClick={decrementPaperType}
                   >
                     <Minus className="w-4 h-4" />
@@ -875,7 +875,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
                     onClick={incrementPaperType}
                   >
                     <Plus className="w-4 h-4" />
@@ -895,7 +895,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
                     onClick={decrementVariant}
                   >
                     <Minus className="w-4 h-4" />
@@ -910,7 +910,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
                     onClick={incrementVariant}
                   >
                     <Plus className="w-4 h-4" />
@@ -965,7 +965,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
               <div className="flex items-center">
                 <button
                   type="button"
-                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer aspect-square"
                   onClick={decrementYear}
                 >
                   <Minus className="w-4 h-4" />
@@ -980,7 +980,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 />
                 <button
                   type="button"
-                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer aspect-square"
                   onClick={incrementYear}
                 >
                   <Plus className="w-4 h-4" />
