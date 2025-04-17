@@ -792,6 +792,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
               <option
                 value=""
                 disabled
+                className="dark:bg-black dark:text-white"
               >
                 Select curriculum
               </option>
@@ -799,6 +800,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <option
                   key={curriculum.id}
                   value={curriculum.id}
+                  className="dark:bg-black dark:text-white"
                 >
                   {curriculum.label}
                 </option>
@@ -826,6 +828,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
               <option
                 value=""
                 disabled
+                className="dark:bg-black dark:text-white"
               >
                 Select subject
               </option>
@@ -833,6 +836,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <option
                   key={subject.id}
                   value={subject.id}
+                  className="dark:bg-black dark:text-white"
                 >
                   {subject.label} ({subject.code})
                 </option>
@@ -853,7 +857,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
                     onClick={decrementPaperType}
                   >
                     <Minus className="w-4 h-4" />
@@ -868,7 +872,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
                     onClick={incrementPaperType}
                   >
                     <Plus className="w-4 h-4" />
@@ -888,7 +892,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
                     onClick={decrementVariant}
                   >
                     <Minus className="w-4 h-4" />
@@ -903,7 +907,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
                     onClick={incrementVariant}
                   >
                     <Plus className="w-4 h-4" />
@@ -933,6 +937,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <option
                   value=""
                   disabled
+                  className="dark:bg-black dark:text-white"
                 >
                   Select season
                 </option>
@@ -940,6 +945,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   <option
                     key={session.id}
                     value={session.id}
+                    className="dark:bg-black dark:text-white"
                   >
                     {session.label} - {session.fullName}
                   </option>
@@ -988,7 +994,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
             <div className="flex flex-col gap-2">
               <button
                 type="submit"
-                className={`w-full p-2 text-white rounded-md cursor-pointer bg-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
+                className={`w-full p-2 text-white rounded-md cursor-pointer bg-black dark:bg-white dark:text-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
                 disabled={!isFormValid() || form.formState.isSubmitting}
               >
                 {!isFormValid() ? "Please fill all fields" : "Find Paper"}
