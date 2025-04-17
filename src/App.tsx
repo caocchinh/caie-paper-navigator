@@ -138,7 +138,7 @@ export function App() {
                   <X size={18} />
                 </Button>
                 <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
+                  className="flex items-center justify-center gap-2 cursor-pointer w-full bg-red-600 hover:bg-rose-700"
                   onClick={() => {
                     setPaperDetails(null);
                     setIsClearData(true);
