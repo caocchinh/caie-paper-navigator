@@ -2,7 +2,7 @@ import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {PaperSearch} from "@/components/paper-search";
-import {ExternalLink, Trash, X} from "lucide-react";
+import {ExternalLink, Github, Trash, X} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 // Paper details interface
@@ -53,18 +53,20 @@ export function App() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <Card className="max-w-xl mx-auto border-none shadow-none">
-        <CardContent className="pt-4">
-          <h2 className="text-xl font-semibold mb-4 text-center">
+    <div className="mx-auto">
+      <Card className="mx-auto border-none shadow-none">
+        <CardContent className="!p-0">
+          <h2 className="text-xl font-semibold mb-4 text-center bg-black text-white py-[9px]">
             <span className="text-re">CAIE</span> IGCSE/A-Level Past Papers Search
           </h2>
-          <PaperSearch
+        <div className="max-w-xl mx-auto">
+        <PaperSearch
             paperType="qp"
             onLinkGenerated={handlePaperGenerated}
             isClearData={isClearData}
             setIsClearData={setIsClearData}
           />
+        </div>
         </CardContent>
       </Card>
 
@@ -175,6 +177,15 @@ export function App() {
               alt="VECTR"
               className="w-5 h-5"
             />
+          </a>
+          <a
+            href="https://github.com/ChinCao"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Visit our GitHub"
+            className="text-sm font-medium"
+          >
+            <Github size={20} />
           </a>
         </div>
       </div>
