@@ -90,8 +90,8 @@ export function App() {
 
       <Card className="mx-auto border-none shadow-none">
         <CardContent className="!p-0">
-          <h2 className="text-xl font-semibold mb-6 text-center bg-black text-white py-[9px]">
-            <span className="text-re">CAIE</span> IGCSE/A-Level Past Papers Search
+          <h2 className="text-xl font-semibold mb-6 text-center bg-gradient-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
+            <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level Past Papers Search
           </h2>
         <div className="max-w-xl mx-auto px-7">
         <PaperSearch
