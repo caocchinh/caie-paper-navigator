@@ -385,7 +385,7 @@ export function App() {
             href="https://github.com/ChinCao"
             target="_blank"
             rel="noopener noreferrer"
-            title="Visit source code"
+            title="Developer's GitHub"
             className="text-sm font-medium"
           >
             <Github size={20} />
