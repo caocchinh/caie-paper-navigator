@@ -10,7 +10,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {GlowEffect} from "./ui/glow-effect";
-import {Search, Plus, Minus, RefreshCw, XCircle} from "lucide-react";
+import {Search, Plus, Minus, XCircle} from "lucide-react";
 
 const formSchema = z.object({
   curriculum: z.string(),
