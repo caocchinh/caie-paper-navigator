@@ -37,8 +37,8 @@ export function App() {
             const isHidden = result.hidePinRecommendation === true;
             setShowPinRecommendation(!isHidden);
             
-            // Dialog on load - default to false if not set
-            const dialogOnLoad = typeof result.showDialogOnLoad === 'boolean' ? result.showDialogOnLoad : false;
+            // Dialog on load - default to true if not set
+            const dialogOnLoad = typeof result.showDialogOnLoad === 'boolean' ? result.showDialogOnLoad : true;
             
             // Force state update to trigger rerender
             setShowDialogOnLoad(false);
@@ -75,10 +75,10 @@ export function App() {
           setShowPinRecommendation(false);
         }
         
-        // Dialog on load - force proper boolean conversion
+        // Dialog on load - default to true if not explicitly set to false
         const dialogOnLoad = localStorage.getItem('showDialogOnLoad');
-        // Only explicitly set to true if the value is 'true', otherwise default to false
-        const parsedValue = dialogOnLoad === 'true';
+        // Parse value - default to true unless explicitly set to 'false'
+        const parsedValue = dialogOnLoad !== 'false';
         
         // Force state update to trigger rerender
         setShowDialogOnLoad(false);
@@ -99,6 +99,9 @@ export function App() {
         console.error('Error accessing localStorage:', error);
         // Even on error, mark as loaded to not block the app
         setPreferencesLoaded(true);
+        
+        // Default to true when there's an error
+        setShowDialogOnLoad(true);
       }
     };
     
