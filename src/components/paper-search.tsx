@@ -689,7 +689,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
 
   return (
     <div className="space-y-6 w-full">
-      <div className="space-y-3 mb-5 h-full border p-5 rounded-sm">
+      <div className="space-y-3 mb-5 h-full border-2 p-5 rounded-sm">
         <Label htmlFor="quick-code">Quick Paper Code</Label>
         <div className="flex justify-center gap-2 h-full">
           <Input
