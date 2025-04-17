@@ -338,11 +338,9 @@ export function App() {
 
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex flex-col space-y-4">
-                  <p className="text-sm text-center text-muted-foreground">
-                    Links will open in new tabs. If you have pop-up blockers enabled, you may need to allow them for this extension.
-                  </p>
                   
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                  
+                  <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label 
                         htmlFor="auto-show-dialog" 
@@ -351,7 +349,7 @@ export function App() {
                         Show dialog on startup
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Automatically show this dialog when valid paper data is found
+                        Automatically show this dialog when existing valid paper data is found
                       </p>
                     </div>
                     <Switch
@@ -360,6 +358,10 @@ export function App() {
                       onCheckedChange={handleDialogPreferenceChange}
                     />
                   </div>
+                  <hr className="border-t border-gray-200 dark:border-gray-700" />
+                  <p className="text-sm text-center text-muted-foreground">
+                    Links will open in new tabs. If you have pop-up blockers enabled, you may need to allow them for this extension.
+                  </p>
                 </div>
               </div>
             </div>

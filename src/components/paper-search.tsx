@@ -790,7 +790,8 @@ export function PaperSearch({
 
   return (
     <div className="space-y-6 w-full">
-      <div className="space-y-3 mb-5 h-full border-2 p-5 rounded-sm">
+      <div className="space-y-3 mb-5 h-full border-2 p-5 rounded-sm relative">
+        
         <Label htmlFor="quick-code">Quick Paper Code</Label>
         <div className="flex justify-center gap-2 h-full">
           <Input
@@ -828,7 +829,7 @@ export function PaperSearch({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(submitFormSafely)}
-          className="space-y-4 w-full"
+          className="space-y-4 w-full border-2 p-5 mb-4 rounded-sm"
         >
           <div>
             <label
@@ -1048,7 +1049,6 @@ export function PaperSearch({
           </div>
 
           <div className="mt-4">
-            <div className="flex flex-col gap-2">
               <button
                 type="submit"
                 className={`w-full p-2 text-white rounded-md cursor-pointer bg-black dark:bg-white dark:text-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
@@ -1057,7 +1057,11 @@ export function PaperSearch({
                 {!isFormValid() ? "Please fill all fields" : "Find Paper"}
                 <Search className="w-4 h-4 ml-2 inline" />
               </button>
-              <button
+             
+          </div>
+        </form>
+      </Form>
+      <button
                 type="button"
                 className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer flex items-center justify-center"
                 onClick={() => setIsClearData(true)}
@@ -1065,10 +1069,6 @@ export function PaperSearch({
                 Clear All
                 <XCircle className="w-4 h-4 ml-2" />
               </button>
-            </div>
-          </div>
-        </form>
-      </Form>
     </div>
   );
 }
