@@ -29,6 +29,14 @@ const formSchema = z.object({
         return yearNum >= 2000;
       },
       {message: "Year must be 2000 or later"}
+    )
+    .refine(
+      (val) => {
+        const yearNum = parseInt(`20${val}`);
+        const currentYear = new Date().getFullYear();
+        return yearNum <= currentYear;
+      },
+      {message: "Year cannot exceed current year"}
     ),
 });
 
@@ -486,6 +494,13 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
         type: "manual",
         message: "Year must be 2000 or later",
       });
+    } 
+    // Validate year doesn't exceed current year
+    else if (numericValue && parseInt(numericValue) > new Date().getFullYear()) {
+      form.setError("year", {
+        type: "manual",
+        message: "Year cannot exceed current year",
+      });
     } else {
       form.clearErrors("year");
     }
@@ -494,8 +509,12 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   // Increment/decrement year
   const incrementYear = () => {
     const currentYear = fullYear ? parseInt(fullYear) : new Date().getFullYear();
-    const newYear = (currentYear + 1).toString();
-    handleYearChange(newYear);
+    const maxYear = new Date().getFullYear();
+    // Only increment if not exceeding current year
+    if (currentYear < maxYear) {
+      const newYear = (currentYear + 1).toString();
+      handleYearChange(newYear);
+    }
   };
 
   const decrementYear = () => {
