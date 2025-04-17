@@ -792,7 +792,7 @@ export function PaperSearch({
     <div className="space-y-6 w-full">
       <div className="space-y-3 mb-5 h-full border-2 p-5 rounded-sm relative">
         
-        <Label htmlFor="quick-code">Quick Paper Code</Label>
+        <Label htmlFor="quick-code" className="text-md">Quick Paper Code</Label>
         <div className="flex justify-center gap-2 h-full">
           <Input
             id="quick-code"
@@ -831,7 +831,8 @@ export function PaperSearch({
           onSubmit={form.handleSubmit(submitFormSafely)}
           className="space-y-4 w-full border-2 p-5 mb-4 rounded-sm"
         >
-          <div>
+        <Label htmlFor="curriculum" className="text-md">Manual Input</Label>
+        <div>
             <label
               htmlFor="curriculum"
               className="block text-sm font-medium mb-1"
