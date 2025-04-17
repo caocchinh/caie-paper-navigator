@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Past Paper Search Tool",
+  "name": "CAIE Paper Navigator",
   "version": "1.0.1",
   "description": "A tool to conveniently search for CAIE IGCSE/A-Level past papers.",
   "permissions": ["storage"],
