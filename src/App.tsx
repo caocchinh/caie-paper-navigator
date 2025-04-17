@@ -2,7 +2,7 @@ import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {PaperSearch} from "@/components/paper-search";
-import {ExternalLink, Trash} from "lucide-react";
+import {ExternalLink, Trash, X} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 // Paper details interface
@@ -54,11 +54,6 @@ export function App() {
 
   return (
     <div className="container mx-auto p-6">
-      <header className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">Past Paper Search Tool</h1>
-        <p className="text-muted-foreground">Find and access Cambridge examination past papers for IGCSE and A-Levels</p>
-      </header>
-
       <Card className="max-w-xl mx-auto">
         <CardContent className="pt-6">
           <h2 className="text-xl font-semibold mb-4 text-center">Search for Papers</h2>
@@ -119,27 +114,26 @@ export function App() {
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
                   onClick={() => openInNewTab(paperDetails.link)}
                 >
-                  <ExternalLink size={18} />
                   Open Question Paper
+                  <ExternalLink size={18} />
                 </Button>
 
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
                   onClick={() => openInNewTab(getMarkingSchemeLink(paperDetails.link))}
                 >
-                  <ExternalLink size={18} />
                   Open Marking Scheme
+                  <ExternalLink size={18} />
                 </Button>
 
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
                   onClick={() => {
-                    openInNewTab(paperDetails.link);
-                    openInNewTab(getMarkingSchemeLink(paperDetails.link));
+                    setDialogOpen(false);
                   }}
                 >
-                  <ExternalLink size={18} />
-                  Open Both
+                  Close
+                  <X size={18} />
                 </Button>
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
