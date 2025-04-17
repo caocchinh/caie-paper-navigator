@@ -74,7 +74,7 @@ export function App() {
   return (
     <div className="min-h-screen flex flex-col justify-between w-full items-center bg-white dark:bg-primary-foreground">
       {showPinRecommendation && (
-        <div className="bg-blue-50 p-3 rounded-md flex items-center justify-between">
+        <div className="bg-blue-50 py-3 px-5 flex items-center justify-between w-full sticky top-0 z-10">
           <p className="text-sm text-blue-700">
             📌 Pin this extension for better user experience and quick access
           </p>
