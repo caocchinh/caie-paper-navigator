@@ -5,6 +5,9 @@ import {PaperSearch} from "@/components/paper-search";
 import {ExternalLink, Github, Trash, X} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import { ModeToggle } from "@/components/mode-toggle";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
 // Paper details interface
 interface PaperDetails {
   link: string;
@@ -20,22 +23,125 @@ export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isClearData, setIsClearData] = useState(false);
   const [showPinRecommendation, setShowPinRecommendation] = useState(true);
+  const [showDialogOnLoad, setShowDialogOnLoad] = useState(true);
 
-  // Load pin recommendation preference from Chrome storage on component mount
+  // Load settings from storage on component mount
   useEffect(() => {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['hidePinRecommendation'], (result) => {
-        const isHidden = result.hidePinRecommendation === true;
-        setShowPinRecommendation(!isHidden);
-      });
-    }
+    // Function to load settings from either Chrome storage or localStorage
+    const loadSettings = () => {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        try {
+          chrome.storage.local.get(['hidePinRecommendation', 'showDialogOnLoad'], (result) => {
+            // Pin recommendation
+            const isHidden = result.hidePinRecommendation === true;
+            setShowPinRecommendation(!isHidden);
+            
+            // Dialog on load - default to true if not set
+            const dialogOnLoad = result.showDialogOnLoad !== false;
+            setShowDialogOnLoad(dialogOnLoad);
+            
+            console.log("Loaded from Chrome storage:", { 
+              hidePinRecommendation: result.hidePinRecommendation,
+              showDialogOnLoad: result.showDialogOnLoad 
+            });
+          });
+        } catch (error) {
+          console.error("Error loading from Chrome storage:", error);
+          // Fall back to localStorage
+          loadFromLocalStorage();
+        }
+      } else {
+        // Fall back to localStorage
+        loadFromLocalStorage();
+      }
+    };
+    
+    // Function to load settings from localStorage
+    const loadFromLocalStorage = () => {
+      try {
+        // Pin recommendation
+        const hidePinRecommendation = localStorage.getItem('hidePinRecommendation');
+        if (hidePinRecommendation === 'true') {
+          setShowPinRecommendation(false);
+        }
+        
+        // Dialog on load
+        const dialogOnLoad = localStorage.getItem('showDialogOnLoad');
+        if (dialogOnLoad !== null) {
+          setShowDialogOnLoad(dialogOnLoad !== 'false');
+        }
+        
+        console.log("Loaded from localStorage:", { 
+          hidePinRecommendation,
+          showDialogOnLoad: dialogOnLoad 
+        });
+      } catch (error) {
+        console.error('Error accessing localStorage:', error);
+      }
+    };
+    
+    loadSettings();
   }, []);
 
   // Handle closing the pin recommendation
   const handleClosePinRecommendation = () => {
     setShowPinRecommendation(false);
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.set({ hidePinRecommendation: true });
+    
+    // Save to Chrome storage if available
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        chrome.storage.local.set({ hidePinRecommendation: true }, () => {
+          console.log("Saved hidePinRecommendation to Chrome storage");
+        });
+      } catch (error) {
+        console.error("Error saving to Chrome storage:", error);
+        // Fall back to localStorage
+        saveToLocalStorage();
+      }
+    } else {
+      // Fall back to localStorage
+      saveToLocalStorage();
+    }
+    
+    // Helper function to save to localStorage
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('hidePinRecommendation', 'true');
+        console.log("Saved hidePinRecommendation to localStorage");
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+    }
+  };
+
+  // Handle dialog preference change
+  const handleDialogPreferenceChange = (checked: boolean) => {
+    setShowDialogOnLoad(checked);
+    
+    // Save to Chrome storage if available
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        chrome.storage.local.set({ showDialogOnLoad: checked }, () => {
+          console.log("Saved showDialogOnLoad to Chrome storage:", checked);
+        });
+      } catch (error) {
+        console.error("Error saving to Chrome storage:", error);
+        // Fall back to localStorage
+        saveToLocalStorage();
+      }
+    } else {
+      // Fall back to localStorage
+      saveToLocalStorage();
+    }
+    
+    // Helper function to save to localStorage
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('showDialogOnLoad', checked.toString());
+        console.log("Saved showDialogOnLoad to localStorage:", checked);
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
     }
   };
 
@@ -51,8 +157,9 @@ export function App() {
       ...details!,
     });
 
-    // Only open the dialog when showDialog is true
-    if (showDialog) {
+    // If showDialog is explicitly true, open dialog regardless of preference
+    // If not specified or false, use the user's preference
+    if (showDialog === true) {
       setDialogOpen(true);
     }
   };
@@ -186,10 +293,31 @@ export function App() {
                 </Button>
               </div>
 
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm text-center text-muted-foreground">
-                  Links will open in new tabs. If you have pop-up blockers enabled, you may need to allow them for this extension.
-                </p>
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex flex-col space-y-4">
+                  <p className="text-sm text-center text-muted-foreground">
+                    Links will open in new tabs. If you have pop-up blockers enabled, you may need to allow them for this extension.
+                  </p>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="space-y-0.5">
+                      <Label 
+                        htmlFor="auto-show-dialog" 
+                        className="text-sm font-medium"
+                      >
+                        Show dialog on startup
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Automatically show this dialog when valid paper data is found
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-show-dialog"
+                      checked={showDialogOnLoad}
+                      onCheckedChange={handleDialogPreferenceChange}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
