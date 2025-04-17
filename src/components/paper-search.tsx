@@ -800,7 +800,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={decrementPaperType}
                   >
                     -
@@ -815,7 +815,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={incrementPaperType}
                   >
                     +
@@ -834,7 +834,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={decrementVariant}
                   >
                     -
@@ -849,7 +849,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={incrementVariant}
                   >
                     +

@@ -56,7 +56,9 @@ export function App() {
     <div className="container mx-auto p-6">
       <Card className="max-w-xl mx-auto">
         <CardContent className="pt-6">
-          <h2 className="text-xl font-semibold mb-4 text-center">Search for Papers</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">
+            <span className="text-re">CAIE</span> IGCSE/A-Level Past Papers Search
+          </h2>
           <PaperSearch
             paperType="qp"
             onLinkGenerated={handlePaperGenerated}
@@ -150,7 +152,7 @@ export function App() {
 
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <p className="text-sm text-center text-muted-foreground">
-                  Links will open in new tabs. If you have pop-up blockers enabled, you may need to allow them for this site.
+                  Links will open in new tabs. If you have pop-up blockers enabled, you may need to allow them for this extension.
                 </p>
               </div>
             </div>
@@ -161,12 +163,18 @@ export function App() {
       <div className="mt-8 text-center">
         <div className="flex items-center justify-center gap-2">
           <a
-            href="https://bestexamhelp.com"
+            href="https://www.instagram.com/vectr.vcp/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium"
+            title="Visit our Instagram"
+            className="text-sm font-medium flex items-center gap-1"
           >
-            Powered by bestexamhelp.com. Build and maintain by VECTR.
+            Powered by bestexamhelp.com. Build and maintain by VECTR
+            <img
+              src="/vectr.png"
+              alt="VECTR"
+              className="w-5 h-5"
+            />
           </a>
         </div>
       </div>
