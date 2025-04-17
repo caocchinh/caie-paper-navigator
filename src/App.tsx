@@ -55,7 +55,7 @@ export function App() {
   return (
     <div className="container mx-auto p-6">
       <Card className="max-w-xl mx-auto">
-        <CardContent className="pt-6">
+        <CardContent className="pt-4">
           <h2 className="text-xl font-semibold mb-4 text-center">
             <span className="text-re">CAIE</span> IGCSE/A-Level Past Papers Search
           </h2>

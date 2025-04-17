@@ -9,6 +9,7 @@ import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
+import {GlowEffect} from "./ui/glow-effect";
 
 const formSchema = z.object({
   curriculum: z.string(),
@@ -699,13 +700,21 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
             onKeyDown={handleKeyDown}
             className={`max-w-md text-center ${quickCodeError ? "border-red-500" : ""}`}
           />
-          <Button
-            onClick={handleQuickCodeSubmit}
-            className="cursor-pointer h-full"
-            disabled={!!quickCodeError && quickCode !== ""}
-          >
-            Find
-          </Button>
+          <div className="h-full relative">
+            <GlowEffect
+              colors={["#FF5733", "#33FF57", "#3357FF", "#F1C40F"]}
+              mode="colorShift"
+              blur="soft"
+              duration={3}
+            />
+            <Button
+              onClick={handleQuickCodeSubmit}
+              className="cursor-pointer h-full relative z-10"
+              disabled={!!quickCodeError && quickCode !== ""}
+            >
+              Find
+            </Button>
+          </div>
         </div>
         {quickCodeError ? (
           <p className="text-xs text-red-500">{quickCodeError}</p>
@@ -923,7 +932,6 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   +
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">Enter full year (e.g. 2020).</p>
               {form.formState.errors.year && <p className="text-xs text-red-500 mt-1">{form.formState.errors.year.message}</p>}
             </div>
           </div>
