@@ -120,3 +120,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar styling for thin, less visible scrollbars */
+* {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.708 0 0 / 30%) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, newer Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: oklch(0.708 0 0 / 30%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.708 0 0 / 50%);
+}
+
+/* For IE/older Edge */
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  * {
+    -ms-overflow-style: auto;
+  }
+}

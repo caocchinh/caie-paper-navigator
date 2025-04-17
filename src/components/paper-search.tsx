@@ -597,14 +597,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
     const oneDigit = numericValue.slice(0, 1);
 
     // Check if variant is 0
-    if (oneDigit === "0") {
-      form.setError("variant", {
-        type: "manual",
-        message: "Variant cannot be 0",
-      });
-    } else {
-      form.clearErrors("variant");
-    }
+  
 
     form.setValue("variant", oneDigit);
   };

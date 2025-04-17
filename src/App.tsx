@@ -23,16 +23,20 @@ export function App() {
 
   // Load pin recommendation preference from Chrome storage on component mount
   useEffect(() => {
-    chrome.storage.local.get(['hidePinRecommendation'], (result) => {
-      const isHidden = result.hidePinRecommendation === true;
-      setShowPinRecommendation(!isHidden);
-    });
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.get(['hidePinRecommendation'], (result) => {
+        const isHidden = result.hidePinRecommendation === true;
+        setShowPinRecommendation(!isHidden);
+      });
+    }
   }, []);
 
   // Handle closing the pin recommendation
   const handleClosePinRecommendation = () => {
     setShowPinRecommendation(false);
-    chrome.storage.local.set({ hidePinRecommendation: true });
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.set({ hidePinRecommendation: true });
+    }
   };
 
   // Handle paper details generation
@@ -76,7 +80,7 @@ export function App() {
           </p>
           <button 
             onClick={handleClosePinRecommendation}
-            className="text-blue-700 hover:text-blue-900"
+            className="text-blue-700 hover:text-blue-900 cursor-pointer"
             aria-label="Close recommendation"
           >
             <X size={16} />
