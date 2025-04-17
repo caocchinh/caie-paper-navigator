@@ -688,9 +688,9 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
 
   return (
     <div className="space-y-6 w-full">
-      <div className="space-y-3 mb-5">
+      <div className="space-y-3 mb-5 h-full">
         <Label htmlFor="quick-code">Quick Paper Code</Label>
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-2 h-full">
           <Input
             id="quick-code"
             placeholder="e.g. 9702/42/M/J/20"
@@ -701,8 +701,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
           />
           <Button
             onClick={handleQuickCodeSubmit}
-            size="sm"
-            className="cursor-pointer"
+            className="cursor-pointer h-full"
             disabled={!!quickCodeError && quickCode !== ""}
           >
             Find
