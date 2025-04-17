@@ -341,7 +341,7 @@ export function App() {
 
                   
                   
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center justify-between py-4 px-6 bg-muted rounded-lg gap-4">
                     <div className="space-y-0.5">
                       <Label 
                         htmlFor="auto-show-dialog" 
