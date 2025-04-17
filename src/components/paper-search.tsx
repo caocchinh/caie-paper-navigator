@@ -67,6 +67,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   const [quickCodeError, setQuickCodeError] = useState<string>("");
   const [isInitialized, setIsInitialized] = useState(true);
   const [pendingSubject, setPendingSubject] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   const curriculumLoaded = useRef(false);
   const initialLoadDone = useRef(false);
   const paperTypeChangeRef = useRef(false);
@@ -84,6 +85,11 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
       year: "",
     },
   });
+
+  // Function to mark a field as touched
+  const markFieldAsTouched = (fieldName: string) => {
+    setTouchedFields(prev => ({...prev, [fieldName]: true}));
+  };
 
   // Watch curriculum for subject filtering
   const watchCurriculum = form.watch("curriculum");
@@ -144,6 +150,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
       setQuickCode("");
       setFullYear("");
       setQuickCodeError("");
+      setTouchedFields({});
       if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({formValues: null});
       } else {
@@ -480,6 +487,9 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
 
   // Handle year input
   const handleYearChange = (value: string) => {
+    // Mark field as touched
+    markFieldAsTouched("year");
+    
     // Only allow numeric input
     const numericValue = value.replace(/\D/g, "");
     setFullYear(numericValue);
@@ -508,16 +518,24 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
 
   // Increment/decrement year
   const incrementYear = () => {
-    const currentYear = fullYear ? parseInt(fullYear) : new Date().getFullYear();
+    markFieldAsTouched("year");
     const maxYear = new Date().getFullYear();
-    // Only increment if not exceeding current year
-    if (currentYear < maxYear) {
-      const newYear = (currentYear + 1).toString();
-      handleYearChange(newYear);
+    
+    if (!fullYear) {
+      // If no input yet, set to current year
+      handleYearChange(maxYear.toString());
+    } else {
+      // Otherwise increment if not exceeding max year
+      const currentYear = parseInt(fullYear);
+      if (currentYear < maxYear) {
+        const newYear = (currentYear + 1).toString();
+        handleYearChange(newYear);
+      }
     }
   };
 
   const decrementYear = () => {
+    markFieldAsTouched("year");
     const currentYear = fullYear ? parseInt(fullYear) : new Date().getFullYear();
     const newYear = (currentYear - 1).toString();
     handleYearChange(newYear);
@@ -525,6 +543,9 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
 
   // Handle paper type and variant increment/decrement
   const handlePaperTypeChange = (value: string) => {
+    // Mark field as touched
+    markFieldAsTouched("paperType");
+    
     // Only allow numeric input
     const numericValue = value.replace(/\D/g, "");
     // Restrict to 1 digit
@@ -544,6 +565,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   };
 
   const incrementPaperType = () => {
+    markFieldAsTouched("paperType");
     const currentValue = form.getValues("paperType");
     const numValue = currentValue ? parseInt(currentValue) : 0;
     // Start from 1 instead of 0
@@ -554,6 +576,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   };
 
   const decrementPaperType = () => {
+    markFieldAsTouched("paperType");
     const currentValue = form.getValues("paperType");
     const numValue = currentValue ? parseInt(currentValue) : 0;
     // Ensure it doesn't go to 0 when decrementing
@@ -564,12 +587,15 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   };
 
   const handleVariantChange = (value: string) => {
+    // Mark field as touched
+    markFieldAsTouched("variant");
+    
     // Only allow numeric input
     const numericValue = value.replace(/\D/g, "");
     // Restrict to 1 digit
     const oneDigit = numericValue.slice(0, 1);
 
-    // Check if paper type is 0
+    // Check if variant is 0
     if (oneDigit === "0") {
       form.setError("variant", {
         type: "manual",
@@ -580,11 +606,10 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
     }
 
     form.setValue("variant", oneDigit);
-
-    // Only allow numeric input
   };
 
   const incrementVariant = () => {
+    markFieldAsTouched("variant");
     const currentValue = form.getValues("variant");
     const numValue = currentValue ? parseInt(currentValue) : 0;
     const newValue = ((numValue + 1) % 10).toString();
@@ -593,6 +618,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   };
 
   const decrementVariant = () => {
+    markFieldAsTouched("variant");
     const currentValue = form.getValues("variant");
     const numValue = currentValue ? parseInt(currentValue) : 0;
     const newValue = ((numValue + 9) % 10).toString();
@@ -670,6 +696,11 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
 
         // Also update the fullYear state with the 20XX format
         setFullYear(`20${year}`);
+
+        // Mark fields as touched since this is a form fill
+        markFieldAsTouched("paperType");
+        markFieldAsTouched("variant");
+        markFieldAsTouched("year");
 
         // Trigger validation
         form.trigger();
@@ -848,7 +879,8 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                     +
                   </button>
                 </div>
-                {form.formState.errors.paperType && <p className="text-xs text-red-500 mt-1">{form.formState.errors.paperType.message}</p>}
+                {touchedFields.paperType && form.formState.errors.paperType && 
+                  <p className="text-xs text-red-500 mt-1">{form.formState.errors.paperType.message}</p>}
               </div>
 
               <div className="w-1/2">
@@ -882,7 +914,8 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                     +
                   </button>
                 </div>
-                {form.formState.errors.variant && <p className="text-xs text-red-500 mt-1">{form.formState.errors.variant.message}</p>}
+                {touchedFields.variant && form.formState.errors.variant && 
+                  <p className="text-xs text-red-500 mt-1">{form.formState.errors.variant.message}</p>}
               </div>
             </div>
 
@@ -951,18 +984,28 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   +
                 </button>
               </div>
-              {form.formState.errors.year && <p className="text-xs text-red-500 mt-1">{form.formState.errors.year.message}</p>}
+              {touchedFields.year && form.formState.errors.year && 
+                <p className="text-xs text-red-500 mt-1">{form.formState.errors.year.message}</p>}
             </div>
           </div>
 
           <div className="mt-4">
-            <button
-              type="submit"
-              className={`w-full p-2 text-white rounded-md cursor-pointer bg-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
-              disabled={!isFormValid() || form.formState.isSubmitting}
-            >
-              {!isFormValid() ? "Please fill all fields" : "Find Paper"}
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                type="submit"
+                className={`w-full p-2 text-white rounded-md cursor-pointer bg-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
+                disabled={!isFormValid() || form.formState.isSubmitting}
+              >
+                {!isFormValid() ? "Please fill all fields" : "Find Paper"}
+              </button>
+              <button
+                type="button"
+                className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer"
+                onClick={() => setIsClearData(true)}
+              >
+                Clear All
+              </button>
+            </div>
           </div>
         </form>
       </Form>
