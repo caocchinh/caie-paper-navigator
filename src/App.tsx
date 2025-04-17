@@ -56,10 +56,10 @@ export function App() {
     <div className="mx-auto">
       <Card className="mx-auto border-none shadow-none">
         <CardContent className="!p-0">
-          <h2 className="text-xl font-semibold mb-4 text-center bg-black text-white py-[9px]">
+          <h2 className="text-xl font-semibold mb-6 text-center bg-black text-white py-[9px]">
             <span className="text-re">CAIE</span> IGCSE/A-Level Past Papers Search
           </h2>
-        <div className="max-w-xl mx-auto">
+        <div className="max-w-xl mx-auto px-7">
         <PaperSearch
             paperType="qp"
             onLinkGenerated={handlePaperGenerated}
@@ -75,7 +75,7 @@ export function App() {
         onOpenChange={setDialogOpen}
       >
         <DialogContent
-          className="w-[100%] xl:max-w-xl"
+          className="w-[90%]"
           aria-describedby="paper-details-description"
         >
           <DialogHeader>
@@ -162,7 +162,7 @@ export function App() {
         </DialogContent>
       </Dialog>
 
-      <div className="mt-8 text-center">
+      <div className="my-8 text-center">
         <div className="flex items-center justify-center gap-2">
           <a
             href="https://www.instagram.com/vectr.vcp/"
