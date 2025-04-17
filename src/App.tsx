@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {PaperSearch} from "@/components/paper-search";
@@ -19,6 +19,21 @@ export function App() {
   const [paperDetails, setPaperDetails] = useState<PaperDetails | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isClearData, setIsClearData] = useState(false);
+  const [showPinRecommendation, setShowPinRecommendation] = useState(true);
+
+  // Load pin recommendation preference from Chrome storage on component mount
+  useEffect(() => {
+    chrome.storage.local.get(['hidePinRecommendation'], (result) => {
+      const isHidden = result.hidePinRecommendation === true;
+      setShowPinRecommendation(!isHidden);
+    });
+  }, []);
+
+  // Handle closing the pin recommendation
+  const handleClosePinRecommendation = () => {
+    setShowPinRecommendation(false);
+    chrome.storage.local.set({ hidePinRecommendation: true });
+  };
 
   // Handle paper details generation
   const handlePaperGenerated = (link: string | null, details?: Omit<PaperDetails, "link">, showDialog: boolean = true) => {
@@ -54,6 +69,21 @@ export function App() {
 
   return (
     <div className="mx-auto">
+      {showPinRecommendation && (
+        <div className="bg-blue-50 p-3 rounded-md flex items-center justify-between">
+          <p className="text-sm text-blue-700">
+            📌 Pin this extension for better user experience and quick access
+          </p>
+          <button 
+            onClick={handleClosePinRecommendation}
+            className="text-blue-700 hover:text-blue-900"
+            aria-label="Close recommendation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <Card className="mx-auto border-none shadow-none">
         <CardContent className="!p-0">
           <h2 className="text-xl font-semibold mb-6 text-center bg-black text-white py-[9px]">
@@ -182,7 +212,7 @@ export function App() {
             href="https://github.com/ChinCao"
             target="_blank"
             rel="noopener noreferrer"
-            title="Visit our GitHub"
+            title="Visit source code"
             className="text-sm font-medium"
           >
             <Github size={20} />
