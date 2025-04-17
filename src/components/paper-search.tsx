@@ -10,6 +10,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {GlowEffect} from "./ui/glow-effect";
+import {Search, Plus, Minus, RefreshCw, XCircle} from "lucide-react";
 
 const formSchema = z.object({
   curriculum: z.string(),
@@ -763,6 +764,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
               disabled={!!quickCodeError && quickCode !== ""}
             >
               Find
+              <Search className="w-4 h-4 ml" />
             </Button>
           </div>
         </div>
@@ -861,7 +863,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                     className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={decrementPaperType}
                   >
-                    -
+                    <Minus className="w-4 h-4" />
                   </button>
                   <input
                     id="paperType"
@@ -876,7 +878,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                     className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={incrementPaperType}
                   >
-                    +
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
                 {touchedFields.paperType && form.formState.errors.paperType && 
@@ -896,7 +898,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                     className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={decrementVariant}
                   >
-                    -
+                    <Minus className="w-4 h-4" />
                   </button>
                   <input
                     id="variant"
@@ -911,7 +913,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                     className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer active:bg-gray-200"
                     onClick={incrementVariant}
                   >
-                    +
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
                 {touchedFields.variant && form.formState.errors.variant && 
@@ -966,7 +968,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
                   onClick={decrementYear}
                 >
-                  -
+                  <Minus className="w-4 h-4" />
                 </button>
                 <input
                   id="year"
@@ -981,7 +983,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer"
                   onClick={incrementYear}
                 >
-                  +
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
               {touchedFields.year && form.formState.errors.year && 
@@ -997,13 +999,15 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                 disabled={!isFormValid() || form.formState.isSubmitting}
               >
                 {!isFormValid() ? "Please fill all fields" : "Find Paper"}
+                <Search className="w-4 h-4 ml-2 inline" />
               </button>
               <button
                 type="button"
-                className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer"
+                className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer flex items-center justify-center"
                 onClick={() => setIsClearData(true)}
               >
                 Clear All
+                <XCircle className="w-4 h-4 ml-2" />
               </button>
             </div>
           </div>
