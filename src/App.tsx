@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {PaperSearch} from "@/components/paper-search";
@@ -23,7 +23,8 @@ export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isClearData, setIsClearData] = useState(false);
   const [showPinRecommendation, setShowPinRecommendation] = useState(true);
-  const [showDialogOnLoad, setShowDialogOnLoad] = useState(true);
+  const [showDialogOnLoad, setShowDialogOnLoad] = useState(false); 
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   // Load settings from storage on component mount
   useEffect(() => {
@@ -36,13 +37,22 @@ export function App() {
             const isHidden = result.hidePinRecommendation === true;
             setShowPinRecommendation(!isHidden);
             
-            // Dialog on load - default to true if not set
-            const dialogOnLoad = result.showDialogOnLoad !== false;
-            setShowDialogOnLoad(dialogOnLoad);
+            // Dialog on load - default to false if not set
+            const dialogOnLoad = typeof result.showDialogOnLoad === 'boolean' ? result.showDialogOnLoad : false;
+            
+            // Force state update to trigger rerender
+            setShowDialogOnLoad(false);
+            
+            // Then set the actual value after a small delay
+            setTimeout(() => {
+              console.log("Setting showDialogOnLoad to:", dialogOnLoad);
+              setShowDialogOnLoad(dialogOnLoad);
+              setPreferencesLoaded(true);
+            }, 50);
             
             console.log("Loaded from Chrome storage:", { 
               hidePinRecommendation: result.hidePinRecommendation,
-              showDialogOnLoad: result.showDialogOnLoad 
+              showDialogOnLoad: dialogOnLoad 
             });
           });
         } catch (error) {
@@ -65,18 +75,30 @@ export function App() {
           setShowPinRecommendation(false);
         }
         
-        // Dialog on load
+        // Dialog on load - force proper boolean conversion
         const dialogOnLoad = localStorage.getItem('showDialogOnLoad');
-        if (dialogOnLoad !== null) {
-          setShowDialogOnLoad(dialogOnLoad !== 'false');
-        }
+        // Only explicitly set to true if the value is 'true', otherwise default to false
+        const parsedValue = dialogOnLoad === 'true';
+        
+        // Force state update to trigger rerender
+        setShowDialogOnLoad(false);
+        
+        // Then set the actual value after a small delay
+        setTimeout(() => {
+          console.log("Setting showDialogOnLoad to:", parsedValue);
+          setShowDialogOnLoad(parsedValue);
+          setPreferencesLoaded(true);
+        }, 50);
         
         console.log("Loaded from localStorage:", { 
           hidePinRecommendation,
-          showDialogOnLoad: dialogOnLoad 
+          showDialogOnLoad: dialogOnLoad,
+          parsedValue
         });
       } catch (error) {
         console.error('Error accessing localStorage:', error);
+        // Even on error, mark as loaded to not block the app
+        setPreferencesLoaded(true);
       }
     };
     
@@ -146,23 +168,36 @@ export function App() {
   };
 
   // Handle paper details generation
-  const handlePaperGenerated = (link: string | null, details?: Omit<PaperDetails, "link">, showDialog: boolean = true) => {
+  const handlePaperGenerated = useCallback((link: string | null, details?: Omit<PaperDetails, "link">, showDialog?: boolean) => {
     if (!link) {
       setPaperDetails(null);
       return;
     }
 
-    setPaperDetails({
-      link,
-      ...details!,
+    console.log("Paper generated with showDialog:", showDialog, "showDialogOnLoad:", showDialogOnLoad);
+
+    // Only update paperDetails if needed
+    setPaperDetails(prev => {
+      if (!prev || prev.link !== link) {
+        return {
+          link,
+          ...details!,
+        };
+      }
+      return prev; // Don't update if it's the same
     });
 
-    // If showDialog is explicitly true, open dialog regardless of preference
-    // If not specified or false, use the user's preference
-    if (showDialog === true) {
+    // Handle dialog opening with a ref to avoid unnecessary renders
+    const shouldOpenDialog = showDialog === true || (showDialog === undefined && showDialogOnLoad === true);
+    
+    if (shouldOpenDialog && !dialogOpen) {
+      console.log("Opening dialog because:", 
+        showDialog === true ? "showDialog is true" : "showDialog is undefined and preference is true");
       setDialogOpen(true);
+    } else if (!shouldOpenDialog) {
+      console.log("Not opening dialog because preference is false");
     }
-  };
+  }, [dialogOpen, showDialogOnLoad]);
 
   // Function to open link in new tab
   const openInNewTab = (url: string) => {
@@ -176,6 +211,12 @@ export function App() {
   // Function to get marking scheme link from question paper link
   const getMarkingSchemeLink = (qpLink: string) => {
     return qpLink.replace("_qp_", "_ms_");
+  };
+
+  // Modify the Dialog component to use a better onOpenChange handler
+  const handleDialogOpenChange = (open: boolean) => {
+    console.log("Dialog open state changed to:", open);
+    setDialogOpen(open);
   };
 
   return (
@@ -206,6 +247,8 @@ export function App() {
             onLinkGenerated={handlePaperGenerated}
             isClearData={isClearData}
             setIsClearData={setIsClearData}
+            preferencesLoaded={preferencesLoaded}
+            showDialogOnLoad={showDialogOnLoad}
           />
         </div>
         </CardContent>
@@ -213,7 +256,7 @@ export function App() {
 
       <Dialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogOpenChange}
       >
         <DialogContent
           className="w-[90%] "
@@ -274,7 +317,7 @@ export function App() {
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
                   onClick={() => {
-                    setDialogOpen(false);
+                    handleDialogOpenChange(false);
                   }}
                 >
                   Close
@@ -285,7 +328,7 @@ export function App() {
                   onClick={() => {
                     setPaperDetails(null);
                     setIsClearData(true);
-                    setDialogOpen(false);
+                    handleDialogOpenChange(false);
                   }}
                 >
                   Clear Data

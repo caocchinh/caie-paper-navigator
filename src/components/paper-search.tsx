@@ -60,9 +60,18 @@ interface PaperSearchProps {
   ) => void;
   isClearData: boolean;
   setIsClearData: (isClearData: boolean) => void;
+  preferencesLoaded?: boolean;
+  showDialogOnLoad?: boolean;
 }
 
-export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClearData}: PaperSearchProps) {
+export function PaperSearch({
+  paperType, 
+  onLinkGenerated, 
+  isClearData, 
+  setIsClearData,
+  preferencesLoaded = true,
+  showDialogOnLoad
+}: PaperSearchProps) {
   const [quickCode, setQuickCode] = useState<string>("");
   const [fullYear, setFullYear] = useState<string>("");
   const [quickCodeError, setQuickCodeError] = useState<string>("");
@@ -74,6 +83,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
   const paperTypeChangeRef = useRef(false);
   const formValuesRef = useRef<FormValues | null>(null);
   const hasMountedRef = useRef(false);
+  const hasGeneratedInitialUrl = useRef(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -185,6 +195,38 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
       const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
       if (!selectedSubject) return;
 
+      // Explicitly save form values to storage on submission
+      const saveFormValuesToStorage = (formValues: FormValues) => {
+        try {
+          if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get("formValues", (result) => {
+              const existingValues = result.formValues || {};
+              const updatedValues = {...existingValues, ...formValues};
+              chrome.storage.local.set({formValues: updatedValues}, () => {
+                console.log("Form values saved to Chrome storage on submission");
+              });
+            });
+          } else {
+            try {
+              const savedValues = localStorage.getItem("formValues");
+              const existingValues = savedValues ? JSON.parse(savedValues) : {};
+              const updatedValues = {...existingValues, ...formValues};
+              localStorage.setItem("formValues", JSON.stringify(updatedValues));
+              console.log("Form values saved to localStorage on submission");
+            } catch (error) {
+              console.error("Error saving to localStorage on submission:", error);
+              // Fallback to direct save
+              localStorage.setItem("formValues", JSON.stringify(formValues));
+            }
+          }
+        } catch (error) {
+          console.error("Error saving form values on submission:", error);
+        }
+      };
+
+      // Save the values
+      saveFormValuesToStorage(values);
+
       const subjectCode = selectedSubject.code;
       const sessionId = values.session;
       const year = `20${values.year}`;
@@ -202,6 +244,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
       const sessionLabel = sessionObj ? sessionObj.label : "";
 
       // Pass paper details along with the link
+      console.log("Call to onLinkGenerated from submitFormSafely with showDialog=true");
       onLinkGenerated(
         url,
         {
@@ -220,170 +263,16 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
     [paperType, onLinkGenerated, generateQuickCode]
   );
 
-  // Load saved form values when component mounts
+  // Original useEffect - update to avoid loading form values
   useEffect(() => {
-    const loadStoredValues = () => {
-      // Only load stored values on initial mount
-      if (hasMountedRef.current) return;
-
-      try {
-        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-          chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
-            try {
-              if (result.formValues) {
-                // Apply each field individually to ensure proper handling
-                form.setValue("curriculum", result.formValues.curriculum || "cambridge-international-a-level");
-
-                // Set subject after a short delay to ensure curriculum is applied
-                setTimeout(() => {
-                  if (result.formValues?.subject) {
-                    form.setValue("subject", result.formValues.subject);
-                  }
-
-                  // Set other values
-                  if (result.formValues?.paperType) {
-                    form.setValue("paperType", result.formValues.paperType);
-                    form.trigger("paperType");
-                  }
-                  if (result.formValues?.variant) {
-                    form.setValue("variant", result.formValues.variant);
-                    form.trigger("variant");
-                  }
-                  if (result.formValues?.session) {
-                    form.setValue("session", result.formValues.session);
-                  }
-                  if (result.formValues?.year) {
-                    form.setValue("year", result.formValues.year);
-                    setFullYear(result.formValues.year.length === 2 ? `20${result.formValues.year}` : result.formValues.year);
-                  }
-
-                  // Trigger form validation
-                  form.trigger();
-
-                  // Generate the URL but don't show the dialog
-                  const values = form.getValues();
-                  const hasRequiredValues = values.subject && values.paperType && values.variant && values.session && values.year;
-
-                  if (hasRequiredValues) {
-                    const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
-                    if (selectedSubject) {
-                      const subjectCode = selectedSubject.code;
-                      const sessionId = values.session;
-                      const year = `20${values.year}`;
-                      const shortYear = values.year;
-                      const paperNumber = `${values.paperType}${values.variant}`;
-                      const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
-
-                      // Generate quick code
-                      const newQuickCode = generateQuickCode(values);
-                      setQuickCode(newQuickCode);
-
-                      // Find session label
-                      const sessionObj = SESSIONS.find((s) => s.id === sessionId);
-                      const sessionLabel = sessionObj ? sessionObj.label : "";
-
-                      // Generate the URL and details, but pass false for showDialog
-                      onLinkGenerated(
-                        url,
-                        {
-                          subjectCode: selectedSubject.code,
-                          subjectName: selectedSubject.label,
-                          paperNumber: paperNumber,
-                          session: sessionLabel,
-                          year: shortYear,
-                        },
-                        false
-                      ); // Don't show dialog on initial load
-                    }
-                  }
-                }, 100);
-              }
-            } catch (error) {
-              console.error("Error parsing saved form values:", error);
-            }
-          });
-        } else {
-          // Same implementation for localStorage with the false flag for dialog
-          const savedValues = localStorage.getItem("formValues");
-          if (savedValues) {
-            try {
-              const parsedValues = JSON.parse(savedValues) as FormValues;
-
-              // Apply values with the same careful approach
-              form.setValue("curriculum", parsedValues.curriculum || "cambridge-international-a-level");
-
-              setTimeout(() => {
-                if (parsedValues.subject) {
-                  form.setValue("subject", parsedValues.subject);
-                }
-                if (parsedValues.paperType) {
-                  form.setValue("paperType", parsedValues.paperType);
-                  form.trigger("paperType");
-                }
-                if (parsedValues.variant) {
-                  form.setValue("variant", parsedValues.variant);
-                  form.trigger("variant");
-                }
-                if (parsedValues.session) {
-                  form.setValue("session", parsedValues.session);
-                }
-                if (parsedValues.year) {
-                  form.setValue("year", parsedValues.year);
-                  setFullYear(parsedValues.year.length === 2 ? `20${parsedValues.year}` : parsedValues.year);
-                }
-
-                form.trigger();
-
-                const values = form.getValues();
-                const hasRequiredValues = values.subject && values.paperType && values.variant && values.session && values.year;
-
-                if (hasRequiredValues) {
-                  const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
-                  if (selectedSubject) {
-                    const subjectCode = selectedSubject.code;
-                    const sessionId = values.session;
-                    const year = `20${values.year}`;
-                    const shortYear = values.year;
-                    const paperNumber = `${values.paperType}${values.variant}`;
-                    const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
-
-                    // Generate quick code
-                    const newQuickCode = generateQuickCode(values);
-                    setQuickCode(newQuickCode);
-
-                    // Find session label
-                    const sessionObj = SESSIONS.find((s) => s.id === sessionId);
-                    const sessionLabel = sessionObj ? sessionObj.label : "";
-
-                    // Generate the URL but don't show dialog
-                    onLinkGenerated(
-                      url,
-                      {
-                        subjectCode: selectedSubject.code,
-                        subjectName: selectedSubject.label,
-                        paperNumber: paperNumber,
-                        session: sessionLabel,
-                        year: shortYear,
-                      },
-                      false
-                    ); // Don't show dialog on initial load
-                  }
-                }
-              }, 100);
-            } catch (error) {
-              console.error("Error parsing saved form values:", error);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error loading stored values:", error);
-      }
-    };
-
-    loadStoredValues();
-    // Set hasMountedRef to true after initial load
-    hasMountedRef.current = true;
-  }, [form, submitFormSafely, paperType, onLinkGenerated, generateQuickCode]);
+    // We no longer need this to load values - just set the mounting flag
+    if (!hasMountedRef.current) {
+      console.log("Setting initial mount reference");
+      hasMountedRef.current = true;
+    }
+    
+    // All form value loading is now handled by the separate useEffect that watches preferencesLoaded
+  }, []);
 
   // Save form values whenever they change
   useEffect(() => {
@@ -405,12 +294,15 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
             });
 
             if (Object.keys(validValues).length > 0) {
+              console.log("Saving form values to storage:", validValues);
               if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
                 // Get existing values first to avoid wiping out values
                 chrome.storage.local.get("formValues", (result) => {
                   const existingValues = result.formValues || {};
                   const updatedValues = {...existingValues, ...validValues};
-                  chrome.storage.local.set({formValues: updatedValues});
+                  chrome.storage.local.set({formValues: updatedValues}, () => {
+                    console.log("Form values saved to Chrome storage");
+                  });
                 });
               } else {
                 // For localStorage, get existing values first before saving
@@ -419,6 +311,7 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
                   const existingValues = savedValues ? JSON.parse(savedValues) : {};
                   const updatedValues = {...existingValues, ...validValues};
                   localStorage.setItem("formValues", JSON.stringify(updatedValues));
+                  console.log("Form values saved to localStorage");
                 } catch (error) {
                   console.error("Error parsing or saving to localStorage:", error);
                   // Fallback to direct save attempt
@@ -437,8 +330,10 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
       }, 500); // Add debounce delay
     };
 
+    // Watch for form changes only after component is mounted
     const subscription = form.watch((values) => {
-      if (values && hasMountedRef.current) {
+      // Only save if component has mounted and we have valid values
+      if (hasMountedRef.current && values) {
         saveFormValues(values);
       }
     });
@@ -475,8 +370,13 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
       if (hasRequiredValues && (paperTypeChangeRef.current || !formValuesRef.current)) {
         // Reset the flag
         paperTypeChangeRef.current = false;
-        // Submit form
-        submitFormSafely(values);
+        
+        // Only auto-submit if paperType specifically changed
+        // Don't auto-submit on initial load anymore since we load from storage separately
+        if (paperTypeChangeRef.current) {
+          console.log("Auto-submitting form after paperType change");
+          submitFormSafely(values);
+        }
       }
     }
 
@@ -709,6 +609,30 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
           year,
         };
 
+        // Explicitly save form values to storage
+        console.log("Quick code submitted, saving form values:", formValues);
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.get("formValues", (result) => {
+            const existingValues = result.formValues || {};
+            const updatedValues = {...existingValues, ...formValues};
+            chrome.storage.local.set({formValues: updatedValues}, () => {
+              console.log("Form values saved to Chrome storage from quick code");
+            });
+          });
+        } else {
+          try {
+            const savedValues = localStorage.getItem("formValues");
+            const existingValues = savedValues ? JSON.parse(savedValues) : {};
+            const updatedValues = {...existingValues, ...formValues};
+            localStorage.setItem("formValues", JSON.stringify(updatedValues));
+            console.log("Form values saved to localStorage from quick code");
+          } catch (error) {
+            console.error("Error saving to localStorage from quick code:", error);
+            // Fallback
+            localStorage.setItem("formValues", JSON.stringify(formValues));
+          }
+        }
+
         submitFormSafely(formValues);
       }, 0);
     } catch (error) {
@@ -730,6 +654,139 @@ export function PaperSearch({paperType, onLinkGenerated, isClearData, setIsClear
     setQuickCode(value);
     setQuickCodeError(validateQuickCode(value));
   };
+
+  // Add this new useEffect to specifically handle loading data when preferencesLoaded changes
+  useEffect(() => {
+    // Only attempt to load form values when preferencesLoaded becomes true
+    // AND we haven't already generated a URL
+    if (preferencesLoaded && !hasGeneratedInitialUrl.current) {
+      console.log("PaperSearch: preferencesLoaded is now true, loading form values");
+      
+      const loadFromStorage = () => {
+        try {
+          if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+            console.log("Attempting to load from Chrome storage");
+            chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
+              if (result.formValues && Object.keys(result.formValues).length > 0) {
+                console.log("Found form values in Chrome storage:", result.formValues);
+                applyFormValues(result.formValues);
+              } else {
+                console.log("No form values found in Chrome storage");
+              }
+            });
+          } else {
+            // Load from localStorage
+            console.log("Attempting to load from localStorage");
+            const savedValues = localStorage.getItem("formValues");
+            console.log("Raw localStorage value:", savedValues);
+            
+            if (savedValues) {
+              try {
+                const parsedValues = JSON.parse(savedValues) as FormValues;
+                console.log("Found form values in localStorage:", parsedValues);
+                applyFormValues(parsedValues);
+              } catch (error) {
+                console.error("Error parsing saved form values:", error);
+              }
+            } else {
+              console.log("No form values found in localStorage");
+            }
+          }
+        } catch (error) {
+          console.error("Error loading from storage:", error);
+        }
+      };
+      
+      const applyFormValues = (values: FormValues) => {
+        console.log("Applying form values:", values);
+        
+        // Set curriculum first
+        form.setValue("curriculum", values.curriculum || "cambridge-international-a-level");
+        
+        // Wait a moment for the curriculum to be set before setting the subject
+        setTimeout(() => {
+          // Set subject
+          if (values.subject) {
+            form.setValue("subject", values.subject);
+          }
+          
+          // Set other values
+          if (values.paperType) {
+            form.setValue("paperType", values.paperType);
+            form.trigger("paperType");
+          }
+          if (values.variant) {
+            form.setValue("variant", values.variant);
+            form.trigger("variant");
+          }
+          if (values.session) {
+            form.setValue("session", values.session);
+          }
+          if (values.year) {
+            form.setValue("year", values.year);
+            setFullYear(values.year.length === 2 ? `20${values.year}` : values.year);
+          }
+          
+          // Validate and generate URL
+          form.trigger().then(() => {
+            const currentValues = form.getValues();
+            if (currentValues.subject && currentValues.paperType && currentValues.variant && 
+                currentValues.session && currentValues.year) {
+              generateUrlFromValues(currentValues);
+            }
+          });
+        }, 100);
+      };
+      
+      const generateUrlFromValues = (values: FormValues) => {
+        const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
+        if (!selectedSubject) {
+          console.log("Subject not found");
+          return;
+        }
+        
+        const subjectCode = selectedSubject.code;
+        const sessionId = values.session;
+        const year = `20${values.year}`;
+        const shortYear = values.year;
+        const paperNumber = `${values.paperType}${values.variant}`;
+        const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
+        
+        // Generate quick code
+        const newQuickCode = generateQuickCode(values);
+        setQuickCode(newQuickCode);
+        
+        // Find session label
+        const sessionObj = SESSIONS.find((s) => s.id === sessionId);
+        const sessionLabel = sessionObj ? sessionObj.label : "";
+        
+        // Mark that we've generated a URL to prevent infinite loops
+        hasGeneratedInitialUrl.current = true;
+        
+        console.log("Generating URL with showDialogOnLoad:", showDialogOnLoad);
+        onLinkGenerated(
+          url,
+          {
+            subjectCode: selectedSubject.code,
+            subjectName: selectedSubject.label,
+            paperNumber: paperNumber,
+            session: sessionLabel,
+            year: shortYear,
+          },
+          showDialogOnLoad
+        );
+      };
+      
+      loadFromStorage();
+    }
+  }, [preferencesLoaded, form, paperType, onLinkGenerated, generateQuickCode, showDialogOnLoad]);
+
+  // Reset the URL generation flag when isClearData changes
+  useEffect(() => {
+    if (isClearData) {
+      hasGeneratedInitialUrl.current = false;
+    }
+  }, [isClearData]);
 
   return (
     <div className="space-y-6 w-full">
