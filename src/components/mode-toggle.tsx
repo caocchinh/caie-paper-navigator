@@ -13,7 +13,7 @@ export function ModeToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark" as Theme)}>
+      <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark" as Theme)} className="cursor-pointer">
         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
         <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         <span className="sr-only">Toggle theme</span>
@@ -22,7 +22,7 @@ export function ModeToggle() {
       <select 
         value={theme} 
         onChange={handleSelectChange}
-        className="bg-background border rounded-md px-2 py-1 text-sm"
+        className="bg-background border rounded-md px-2 py-1 text-sm cursor-pointer"
       >
         <option value="light">Light</option>
         <option value="dark">Dark</option>

@@ -196,7 +196,7 @@ export function App() {
         </DialogContent>
       </Dialog>
 
-      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-gray-900 rounded-lg p-4 w-full">
+      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-gray-900  p-4 w-full">
         <div className="flex items-center justify-center gap-2 w-full bg-gray-100 dark:bg-gray-900">
           <a
             href="https://www.instagram.com/vectr.vcp/"
