@@ -327,7 +327,7 @@ export function App() {
                   <X size={18} />
                 </Button>
                 <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full bg-red-600 hover:bg-red-700"
+                  className="flex items-center justify-center gap-2 cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => {
                     setPaperDetails(null);
                     setIsClearData(true);
@@ -365,8 +365,8 @@ export function App() {
         </DialogContent>
       </Dialog>
 
-      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-gray-900  p-4 w-full">
-        <div className="flex items-center justify-center gap-2 w-full bg-gray-100 dark:bg-gray-900">
+      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-primary-foreground  p-4 w-full">
+        <div className="flex items-center justify-center gap-2 w-full">
           <a
             href="https://www.instagram.com/vectr.vcp/"
             target="_blank"
