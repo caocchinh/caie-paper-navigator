@@ -84,6 +84,7 @@ export function PaperSearch({
   const formValuesRef = useRef<FormValues | null>(null);
   const hasMountedRef = useRef(false);
   const hasGeneratedInitialUrl = useRef(false);
+  const quickSearchUsed = useRef(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -245,6 +246,10 @@ export function PaperSearch({
 
       // Pass paper details along with the link
       console.log("Call to onLinkGenerated from submitFormSafely with showDialog=true");
+      
+      // Set flag to indicate quick search was used to prevent duplicate dialog
+      hasGeneratedInitialUrl.current = true;
+      
       onLinkGenerated(
         url,
         {
@@ -554,6 +559,9 @@ export function PaperSearch({
         return;
       }
 
+      // Mark that quick search was used to prevent duplicate dialog
+      quickSearchUsed.current = true;
+      
       // Destructure match without capturing unused variables
       const [, subjectCode, paperNumber, session, year] = match;
 
@@ -659,7 +667,8 @@ export function PaperSearch({
   useEffect(() => {
     // Only attempt to load form values when preferencesLoaded becomes true
     // AND we haven't already generated a URL
-    if (preferencesLoaded && !hasGeneratedInitialUrl.current) {
+    // AND quick search wasn't just used
+    if (preferencesLoaded && !hasGeneratedInitialUrl.current && !quickSearchUsed.current) {
       console.log("PaperSearch: preferencesLoaded is now true, loading form values");
       
       const loadFromStorage = () => {
@@ -785,6 +794,7 @@ export function PaperSearch({
   useEffect(() => {
     if (isClearData) {
       hasGeneratedInitialUrl.current = false;
+      quickSearchUsed.current = false;
     }
   }, [isClearData]);
 
