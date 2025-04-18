@@ -47,15 +47,9 @@ export function App() {
             
             // Then set the actual value after a small delay
             setTimeout(() => {
-              console.log("Setting showDialogOnLoad to:", dialogOnLoad);
               setShowDialogOnLoad(dialogOnLoad);
               setPreferencesLoaded(true);
             }, 50);
-            
-            console.log("Loaded from Chrome storage:", { 
-              hidePinRecommendation: result.hidePinRecommendation,
-              showDialogOnLoad: dialogOnLoad 
-            });
           });
         } catch (error) {
           console.error("Error loading from Chrome storage:", error);
@@ -87,16 +81,9 @@ export function App() {
         
         // Then set the actual value after a small delay
         setTimeout(() => {
-          console.log("Setting showDialogOnLoad to:", parsedValue);
           setShowDialogOnLoad(parsedValue);
           setPreferencesLoaded(true);
         }, 50);
-        
-        console.log("Loaded from localStorage:", { 
-          hidePinRecommendation,
-          showDialogOnLoad: dialogOnLoad,
-          parsedValue
-        });
       } catch (error) {
         console.error('Error accessing localStorage:', error);
         // Even on error, mark as loaded to not block the app
@@ -118,7 +105,6 @@ export function App() {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       try {
         chrome.storage.local.set({ hidePinRecommendation: true }, () => {
-          console.log("Saved hidePinRecommendation to Chrome storage");
         });
       } catch (error) {
         console.error("Error saving to Chrome storage:", error);
@@ -134,7 +120,6 @@ export function App() {
     function saveToLocalStorage() {
       try {
         localStorage.setItem('hidePinRecommendation', 'true');
-        console.log("Saved hidePinRecommendation to localStorage");
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
@@ -149,7 +134,6 @@ export function App() {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       try {
         chrome.storage.local.set({ showDialogOnLoad: checked }, () => {
-          console.log("Saved showDialogOnLoad to Chrome storage:", checked);
         });
       } catch (error) {
         console.error("Error saving to Chrome storage:", error);
@@ -165,7 +149,6 @@ export function App() {
     function saveToLocalStorage() {
       try {
         localStorage.setItem('showDialogOnLoad', checked.toString());
-        console.log("Saved showDialogOnLoad to localStorage:", checked);
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
@@ -182,8 +165,6 @@ export function App() {
     // Update quickSearchUsed based on value passed from PaperSearch component
     quickSearchUsed.current = isQuickSearch || false;
 
-    console.log("Paper generated with showDialog:", showDialog, "showDialogOnLoad:", showDialogOnLoad, "isQuickSearch:", isQuickSearch);
-
     // Only update paperDetails if needed
     setPaperDetails(prev => {
       if (!prev || prev.link !== link) {
@@ -199,11 +180,7 @@ export function App() {
     const shouldOpenDialog = showDialog === true || (showDialog === undefined && showDialogOnLoad === true);
     
     if (shouldOpenDialog && !dialogOpen) {
-      console.log("Opening dialog because:", 
-        showDialog === true ? "showDialog is true" : "showDialog is undefined and preference is true");
       setDialogOpen(true);
-    } else if (!shouldOpenDialog) {
-      console.log("Not opening dialog because preference is false");
     }
   }, [dialogOpen, showDialogOnLoad]);
 
@@ -223,7 +200,6 @@ export function App() {
 
   // Modify the Dialog component to use a better onOpenChange handler
   const handleDialogOpenChange = (open: boolean) => {
-    console.log("Dialog open state changed to:", open);
     setDialogOpen(open);
     
     // Only focus on quick search input when dialog closes AND quick search was used
