@@ -34,6 +34,13 @@ const formSchema = z.object({
     .refine(
       (val) => {
         const yearNum = parseInt(`20${val}`);
+        return yearNum >= 2009;
+      },
+      {message: "Year must be 2009 or later"}
+    )
+    .refine(
+      (val) => {
+        const yearNum = parseInt(`20${val}`);
         const currentYear = new Date().getFullYear();
         return yearNum <= currentYear;
       },
@@ -78,12 +85,33 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   preferencesLoaded = true,
   showDialogOnLoad
 }, ref) => {
+  /*
+   * Data Storage Behavior:
+   * ---------------------
+   * 1. Quick Search Data:
+   *    - Stored in 'quickSearchValues' key in storage
+   *    - Loaded independently from manual form data
+   *    - Only syncs to form when quick search is submitted
+   *
+   * 2. Manual Form Data:
+   *    - Stored in 'formValues' key in storage
+   *    - Saved on every input change (keypress)
+   *    - Only syncs to quick search when manual form is submitted or user explicitly sets sync flag
+   *
+   * 3. Synchronization:
+   *    - Each input method maintains independent data until user interacts with it
+   *    - Data from manual input is saved to local storage with every change
+   *    - Quick search data is only saved when submitted
+   *    - Sync flags control when data flows between the two storage containers
+   */
+
   const [quickCode, setQuickCode] = useState<string>("");
   const [fullYear, setFullYear] = useState<string>("");
   const [quickCodeError, setQuickCodeError] = useState<string>("");
-  const [isInitialized, setIsInitialized] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [pendingSubject, setPendingSubject] = useState<string | null>(null);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const [selectedCurriculum, setSelectedCurriculum] = useState<string>("cambridge-international-a-level");
   const curriculumLoaded = useRef(false);
   const initialLoadDone = useRef(false);
   const paperTypeChangeRef = useRef(false);
@@ -91,7 +119,12 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   const hasMountedRef = useRef(false);
   const hasGeneratedInitialUrl = useRef(false);
   const quickSearchUsed = useRef(false);
+  const manualInputUsed = useRef(false);
   const quickSearchInputRef = useRef<HTMLInputElement>(null);
+  const shouldSyncQuickSearchToForm = useRef(false);
+  const shouldSyncFormToQuickSearch = useRef(false);
+  const formInteractedRef = useRef(false);
+  const previousCurriculumRef = useRef<string | null>(null);
 
   // Expose the focus method to parent components
   useImperativeHandle(ref, () => ({
@@ -105,7 +138,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      curriculum: "cambridge-international-a-level",
+      curriculum: selectedCurriculum,
       subject: "",
       paperType: "",
       variant: "",
@@ -119,82 +152,68 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     setTouchedFields(prev => ({...prev, [fieldName]: true}));
   };
 
-  // Watch curriculum for subject filtering
+  // Watch all form values for reactive rendering
   const watchCurriculum = form.watch("curriculum");
+  const watchSubject = form.watch("subject");
+  const watchPaperType = form.watch("paperType");
+  const watchVariant = form.watch("variant");
+  const watchSeason = form.watch("season");
+
+  // Update local state when form curriculum changes
+  useEffect(() => {
+    if (watchCurriculum && watchCurriculum !== selectedCurriculum) {
+      setSelectedCurriculum(watchCurriculum);
+    }
+  }, [watchCurriculum, selectedCurriculum]);
+
+  // Load initial curriculum from storage - run this before any other effects
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      console.log("Loading initial curriculum from storage");
+      
+      // Try localStorage first (synchronous)
+      try {
+        const savedValues = localStorage.getItem("formValues");
+        if (savedValues) {
+          const parsedValues = JSON.parse(savedValues) as FormValues;
+          if (parsedValues.curriculum) {
+            console.log("Found curriculum in localStorage:", parsedValues.curriculum);
+            // Update local state directly
+            setSelectedCurriculum(parsedValues.curriculum);
+            // Also update form
+            form.setValue("curriculum", parsedValues.curriculum);
+            previousCurriculumRef.current = parsedValues.curriculum;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading curriculum from localStorage:", error);
+      }
+      
+      // Then try Chrome storage as backup
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
+          if (result.formValues && result.formValues.curriculum) {
+            console.log("Found curriculum in Chrome storage:", result.formValues.curriculum);
+            // Update local state directly
+            setSelectedCurriculum(result.formValues.curriculum);
+            // Also update form
+            form.setValue("curriculum", result.formValues.curriculum);
+            previousCurriculumRef.current = result.formValues.curriculum;
+          }
+        });
+      }
+      
+      hasMountedRef.current = true;
+      
+      // Validate any initial quick code on mount
+      if (quickCode) {
+        validateAndSetQuickCodeError(quickCode);
+      }
+    }
+  }, [form, quickCode]); // Add dependencies
 
   // Filter subjects based on selected curriculum
-  const filteredSubjects = SUBJECTS.filter((subject) => subject.curriculum === watchCurriculum);
-
-  // Handle curriculum change
-  useEffect(() => {
-    // Don't reset subject on initial load
-    if (isInitialized && !pendingSubject) {
-      form.setValue("subject", "");
-    }
-
-    curriculumLoaded.current = true;
-
-    // Try to set pending subject if it exists and matches the current curriculum
-    if (pendingSubject) {
-      const subjectExists = SUBJECTS.some((s) => s.id === pendingSubject && s.curriculum === watchCurriculum);
-
-      if (subjectExists) {
-        form.setValue("subject", pendingSubject);
-        form.trigger("subject");
-        setPendingSubject(null);
-
-        // If this was part of initialization, mark as initialized
-        if (!isInitialized) {
-          setIsInitialized(true);
-        }
-      }
-    }
-  }, [watchCurriculum, form, isInitialized, pendingSubject]);
-
-  // Validate quick code as user types
-  const validateQuickCode = (code: string): string => {
-    if (!code) return "";
-
-    const regex = /^(\d{4})\/(\d{2})\/(F\/M|M\/J|O\/N)\/(\d{2})$/;
-    if (!regex.test(code)) {
-      return "Invalid format. Please use format like: 9702/42/M/J/20";
-    }
-
-    const match = code.match(regex);
-    if (!match) return "Invalid format";
-
-    const subjectCode = match[1];
-    const subject = SUBJECTS.find((s) => s.code === subjectCode);
-    if (!subject) {
-      return `Subject with code ${subjectCode} is not supported yet`;
-    }
-    
-    // Validate the year doesn't exceed current year
-    const yearDigits = match[4];
-    const fullYear = parseInt(`20${yearDigits}`);
-    const currentYear = new Date().getFullYear();
-    if (fullYear > currentYear) {
-      return `Year cannot exceed current year (${currentYear})`;
-    }
-
-    return "";
-  };
-
-  useEffect(() => {
-    if (isClearData) {
-      form.reset();
-      setQuickCode("");
-      setFullYear("");
-      setQuickCodeError("");
-      setTouchedFields({});
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({formValues: null});
-      } else {
-        localStorage.clear();
-      }
-      setIsClearData(false);
-    }
-  }, [isClearData, form, setIsClearData]);
+  const filteredSubjects = SUBJECTS.filter((subject) => subject.curriculum === selectedCurriculum);
 
   // Generate quick code from form values (pure function without state updates)
   const generateQuickCode = useCallback((values: FormValues) => {
@@ -217,10 +236,13 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       // Store values to prevent unnecessary re-renders
       formValuesRef.current = values;
 
-      const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
-      if (!selectedSubject) return;
+      // Set the flag to indicate that manual input was used regardless of subject selection
+      if (!quickSearchUsed.current) {
+        manualInputUsed.current = true;
+        shouldSyncFormToQuickSearch.current = true;
+      }
 
-      // Explicitly save form values to storage on submission
+      // Always save form values to storage, even if subject is not selected
       const saveFormValuesToStorage = (formValues: FormValues) => {
         try {
           if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
@@ -230,6 +252,15 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               chrome.storage.local.set({formValues: updatedValues}, () => {
                 console.log("Form values saved to Chrome storage on submission");
               });
+              
+              // If quick search was used, also update quick search values
+              // But only if we have a subject to generate a code from
+              if ((quickSearchUsed.current || shouldSyncFormToQuickSearch.current) && formValues.subject) {
+                const newQuickCode = generateQuickCode(formValues);
+                chrome.storage.local.set({quickSearchValues: {quickCode: newQuickCode}}, () => {
+                  console.log("Quick search values updated from form values");
+                });
+              }
             });
           } else {
             try {
@@ -238,6 +269,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               const updatedValues = {...existingValues, ...formValues};
               localStorage.setItem("formValues", JSON.stringify(updatedValues));
               console.log("Form values saved to localStorage on submission");
+              
+              // If quick search was used, also update quick search values
+              // But only if we have a subject to generate a code from
+              if ((quickSearchUsed.current || shouldSyncFormToQuickSearch.current) && formValues.subject) {
+                const newQuickCode = generateQuickCode(formValues);
+                localStorage.setItem("quickSearchValues", JSON.stringify({quickCode: newQuickCode}));
+                console.log("Quick search values updated from form values");
+              }
             } catch (error) {
               console.error("Error saving to localStorage on submission:", error);
               // Fallback to direct save
@@ -251,6 +290,13 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
       // Save the values
       saveFormValuesToStorage(values);
+
+      // Only proceed with URL generation if we have a subject selected
+      const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
+      if (!selectedSubject) {
+        console.log("No subject selected, skipping URL generation");
+        return;
+      }
 
       const subjectCode = selectedSubject.code;
       const seasonId = values.season;
@@ -304,20 +350,157 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     [paperType, onLinkGenerated, generateQuickCode]
   );
 
-  // Original useEffect - update to avoid loading form values
+  // Handle curriculum change
   useEffect(() => {
-    // We no longer need this to load values - just set the mounting flag
-    if (!hasMountedRef.current) {
-      console.log("Setting initial mount reference");
-      hasMountedRef.current = true;
+    // Always reset subject when curriculum changes, except during initial load
+    if (isInitialized && hasMountedRef.current && selectedCurriculum !== previousCurriculumRef.current) {
+      form.setValue("subject", "");
+      form.trigger("subject");
     }
     
-    // All form value loading is now handled by the separate useEffect that watches preferencesLoaded
-  }, []);
+    curriculumLoaded.current = true;
+
+    // Try to set pending subject if it exists and matches the current curriculum
+    if (pendingSubject) {
+      const subjectExists = SUBJECTS.some((s) => s.id === pendingSubject && s.curriculum === selectedCurriculum);
+
+      if (subjectExists) {
+        form.setValue("subject", pendingSubject);
+        form.trigger("subject");
+        
+        // If we're coming from quick search, we need to submit the form
+        if (quickSearchUsed.current && shouldSyncQuickSearchToForm.current) {
+          console.log("Submitting form after curriculum change with pending subject:", pendingSubject);
+          
+          // Get current form values
+          const currentValues = form.getValues();
+          if (currentValues.paperType && currentValues.variant && 
+              currentValues.season && currentValues.year) {
+            // Submit the form with complete values, but don't use submitFormSafely directly
+            // Instead use form.handleSubmit to avoid the reference error
+            const formValues = {
+              ...currentValues,
+              subject: pendingSubject
+            };
+            
+            // Only proceed with URL generation if we have a subject selected
+            const selectedSubject = SUBJECTS.find((s) => s.id === formValues.subject);
+            if (selectedSubject) {
+              const subjectCode = selectedSubject.code;
+              const seasonId = formValues.season;
+              const year = `20${formValues.year}`;
+              const shortYear = formValues.year;
+              const paperNumber = `${formValues.paperType}${formValues.variant}`;
+
+              // Format URL
+              const url = `https://bestexamhelp.com/exam/${formValues.curriculum}/${formValues.subject}/${year}/${subjectCode}_${seasonId}${shortYear}_${paperType}_${paperNumber}.pdf`;
+
+              // Generate quick code 
+              const newQuickCode = generateQuickCode(formValues);
+
+              // Find season label
+              const seasonObj = seasonS.find((s) => s.id === seasonId);
+              const seasonLabel = seasonObj ? seasonObj.label : "";
+              
+              // Set URL generated flag
+              hasGeneratedInitialUrl.current = true;
+              
+              // Mark that quick search was used
+              console.log("Quick search used during curriculum change");
+              
+              // Call onLinkGenerated with paper details
+              onLinkGenerated(
+                url,
+                {
+                  subjectCode: selectedSubject.code,
+                  subjectName: selectedSubject.label,
+                  paperNumber: paperNumber,
+                  season: seasonLabel,
+                  year: shortYear,
+                },
+                true,
+                true // This is coming from quick search
+              );
+
+              // Update quick code state
+              setQuickCode(newQuickCode);
+              // Clear any existing quick code error
+              setQuickCodeError("");
+            }
+          }
+        }
+        
+        setPendingSubject(null);
+
+        // If this was part of initialization, mark as initialized
+        if (!isInitialized) {
+          setIsInitialized(true);
+        }
+      }
+    }
+    
+    // Update the previous curriculum reference
+    previousCurriculumRef.current = selectedCurriculum;
+  }, [selectedCurriculum, form, isInitialized, pendingSubject, watchSubject, generateQuickCode, paperType, onLinkGenerated]);
+
+  // Validate quick code as user types
+  const validateQuickCode = (code: string): string => {
+    if (!code) return "";
+
+    const regex = /^(\d{4})\/(\d{2})\/(F\/M|M\/J|O\/N)\/(\d{2})$/;
+    if (!regex.test(code)) {
+      return "Invalid format. Please use format [Subject Code]/[Paper Number]/[Season]/[Year]";
+    }
+
+    const match = code.match(regex);
+    if (!match) return "Invalid format";
+
+    const subjectCode = match[1];
+    const subject = SUBJECTS.find((s) => s.code === subjectCode);
+    if (!subject) {
+      return `Subject with code ${subjectCode} is not supported yet`;
+    }
+    
+    // Validate the year doesn't exceed current year
+    const yearDigits = match[4];
+    const fullYear = parseInt(`20${yearDigits}`);
+    const currentYear = new Date().getFullYear();
+    if (fullYear > currentYear) {
+      return `Year cannot exceed current year (${currentYear})`;
+    }
+    
+    // Validate the year is 2009 or later
+    if (fullYear < 2009) {
+      return "Year must be 2009 or later";
+    }
+
+    return "";
+  };
+
+  useEffect(() => {
+    if (isClearData) {
+      form.reset();
+      setQuickCode("");
+      setFullYear("");
+      setQuickCodeError("");
+      setTouchedFields({});
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({formValues: null, quickSearchValues: null});
+      } else {
+        localStorage.removeItem("formValues");
+        localStorage.removeItem("quickSearchValues");
+      }
+      setIsClearData(false);
+      quickSearchUsed.current = false;
+      manualInputUsed.current = false;
+      shouldSyncQuickSearchToForm.current = false;
+      shouldSyncFormToQuickSearch.current = false;
+      previousCurriculumRef.current = null;
+    }
+  }, [isClearData, form, setIsClearData]);
 
   // Save form values whenever they change
   useEffect(() => {
-
     const saveFormValues = (values: Partial<FormValues>) => {
       try {
         if (values && Object.keys(values).length > 0) {
@@ -339,6 +522,18 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
                 chrome.storage.local.set({formValues: updatedValues}, () => {
                   console.log("Form values saved to Chrome storage");
                 });
+                
+                // If we should sync form to quick search, update quick search values
+                if (shouldSyncFormToQuickSearch.current) {
+                  const completeValues = {...existingValues, ...validValues} as FormValues;
+                  if (completeValues.subject && completeValues.paperType && 
+                      completeValues.variant && completeValues.season && completeValues.year) {
+                    const newQuickCode = generateQuickCode(completeValues);
+                    chrome.storage.local.set({quickSearchValues: {quickCode: newQuickCode}}, () => {
+                      console.log("Quick search values updated from form values");
+                    });
+                  }
+                }
               });
             } else {
               // For localStorage, get existing values first before saving
@@ -348,6 +543,17 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
                 const updatedValues = {...existingValues, ...validValues};
                 localStorage.setItem("formValues", JSON.stringify(updatedValues));
                 console.log("Form values saved to localStorage");
+                
+                // If we should sync form to quick search, update quick search values
+                if (shouldSyncFormToQuickSearch.current) {
+                  const completeValues = {...existingValues, ...validValues} as FormValues;
+                  if (completeValues.subject && completeValues.paperType && 
+                      completeValues.variant && completeValues.season && completeValues.year) {
+                    const newQuickCode = generateQuickCode(completeValues);
+                    localStorage.setItem("quickSearchValues", JSON.stringify({quickCode: newQuickCode}));
+                    console.log("Quick search values updated from form values");
+                  }
+                }
               } catch (error) {
                 console.error("Error parsing or saving to localStorage:", error);
                 // Fallback to direct save attempt
@@ -376,7 +582,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     return () => {
       subscription.unsubscribe();
     };
-  }, [form]);
+  }, [form, generateQuickCode]);
 
   // Track paperType changes
   useEffect(() => {
@@ -420,35 +626,128 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     }
   }, [isInitialized, form, submitFormSafely]);
 
+  // Add individual field change handlers to ensure values are saved on each input
+  const handleFieldChange = (field: keyof FormValues, value: string) => {
+    // Mark that the form has been interacted with
+    formInteractedRef.current = true;
+    
+    form.setValue(field, value);
+    form.trigger(field);
+
+    // Mark as manual input used
+    manualInputUsed.current = true;
+  };
+
+  // Update the curriculum and subject handlers
+  const handleCurriculumChange = (value: string) => {
+    // Update local state immediately
+    setSelectedCurriculum(value);
+    // Then update form
+    handleFieldChange("curriculum", value);
+    // Reset subject when curriculum changes
+    form.setValue("subject", "");
+    form.trigger("subject");
+    
+    // Update storage with reset subject
+    try {
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get("formValues", (result) => {
+          const existingValues = result.formValues || {};
+          const updatedValues = {...existingValues, curriculum: value, subject: ""};
+          chrome.storage.local.set({formValues: updatedValues}, () => {
+            console.log("Storage updated with new curriculum and reset subject");
+          });
+        });
+      } else {
+        try {
+          const savedValues = localStorage.getItem("formValues");
+          const existingValues = savedValues ? JSON.parse(savedValues) : {};
+          const updatedValues = {...existingValues, curriculum: value, subject: ""};
+          localStorage.setItem("formValues", JSON.stringify(updatedValues));
+          console.log("localStorage updated with new curriculum and reset subject");
+        } catch (error) {
+          console.error("Error updating localStorage after curriculum change:", error);
+          // Fallback direct save
+          localStorage.setItem("formValues", JSON.stringify({curriculum: value, subject: ""}));
+        }
+      }
+    } catch (error) {
+      console.error("Error updating storage after curriculum change:", error);
+    }
+  };
+
+  const handleSubjectChange = (value: string) => {
+    // Prevent empty selection
+    if (value === "") {
+      return;
+    }
+    handleFieldChange("subject", value);
+  };
+
+  const handleSeasonChange = (value: string) => {
+    handleFieldChange("season", value);
+  };
+
   // Handle year input
   const handleYearChange = (value: string) => {
     // Mark field as touched
     markFieldAsTouched("year");
     
-    // Only allow numeric input
-    const numericValue = value.replace(/\D/g, "");
+    // Only allow numeric input and limit to a reasonable length (4 digits)
+    const numericValue = value.replace(/\D/g, "").slice(0, 4);
     setFullYear(numericValue);
 
     // Extract last two digits for the form
     const lastTwoDigits = numericValue.slice(-2).padStart(2, "0");
-    form.setValue("year", lastTwoDigits);
+    handleFieldChange("year", lastTwoDigits);
 
-    // Validate year is 2000 or later
-    if (numericValue && parseInt(numericValue) < 2000) {
-      form.setError("year", {
-        type: "manual",
-        message: "Year must be 2000 or later",
-      });
-    } 
-    // Validate year doesn't exceed current year
-    else if (numericValue && parseInt(numericValue) > new Date().getFullYear()) {
-      const currentYear = new Date().getFullYear();
-      form.setError("year", {
-        type: "manual",
-        message: `Year cannot exceed current year (${currentYear})`,
-      });
-    } else {
-      form.clearErrors("year");
+    // Clear errors first
+    form.clearErrors("year");
+
+    // Validate year only if we have input
+    if (numericValue) {
+      // Safe parsing even for very long numbers by using the limited numericValue
+      let yearToCheck: number;
+      
+      try {
+        // If numericValue is at least 4 digits, use it directly
+        if (numericValue.length >= 4) {
+          yearToCheck = parseInt(numericValue);
+        } else {
+          // Otherwise, pad with 20 prefix (for 20XX format)
+          yearToCheck = parseInt(`20${lastTwoDigits}`);
+        }
+
+        const currentYear = new Date().getFullYear();
+        
+        // Check if year is too early
+        if (yearToCheck < 2000) {
+          form.setError("year", {
+            type: "manual",
+            message: "Year must be 2000 or later",
+          });
+        } 
+        // Check if year is before 2009
+        else if (yearToCheck < 2009) {
+          form.setError("year", {
+            type: "manual",
+            message: "Year must be 2009 or later",
+          });
+        }
+        // Check if year exceeds current year
+        else if (yearToCheck > currentYear) {
+          form.setError("year", {
+            type: "manual",
+            message: `Year cannot exceed current year (${currentYear})`,
+          });
+        }
+      } catch (error) {
+        // Handle any parsing errors
+        form.setError("year", {
+          type: "manual",
+          message: "Invalid year format",
+        });
+      }
     }
   };
 
@@ -497,7 +796,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       form.clearErrors("paperType");
     }
 
-    form.setValue("paperType", oneDigit);
+    handleFieldChange("paperType", oneDigit);
   };
 
   const incrementPaperType = () => {
@@ -506,7 +805,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     const numValue = currentValue ? parseInt(currentValue) : 0;
     // Start from 1 instead of 0
     const newValue = numValue === 0 || numValue === 9 ? "1" : ((numValue + 1) % 10).toString();
-    form.setValue("paperType", newValue);
+    handleFieldChange("paperType", newValue);
     form.clearErrors("paperType");
     form.trigger("paperType");
   };
@@ -517,7 +816,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     const numValue = currentValue ? parseInt(currentValue) : 0;
     // Ensure it doesn't go to 0 when decrementing
     const newValue = numValue === 0 || numValue === 1 ? "9" : (numValue - 1 || 9).toString();
-    form.setValue("paperType", newValue);
+    handleFieldChange("paperType", newValue);
     form.clearErrors("paperType");
     form.trigger("paperType");
   };
@@ -531,10 +830,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     // Restrict to 1 digit
     const oneDigit = numericValue.slice(0, 1);
 
-    // Check if variant is 0
-  
-
-    form.setValue("variant", oneDigit);
+    handleFieldChange("variant", oneDigit);
   };
 
   const incrementVariant = () => {
@@ -542,7 +838,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     const currentValue = form.getValues("variant");
     const numValue = currentValue ? parseInt(currentValue) : 0;
     const newValue = ((numValue + 1) % 10).toString();
-    form.setValue("variant", newValue);
+    handleFieldChange("variant", newValue);
     form.clearErrors("variant");
   };
 
@@ -551,7 +847,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     const currentValue = form.getValues("variant");
     const numValue = currentValue ? parseInt(currentValue) : 0;
     const newValue = ((numValue + 9) % 10).toString();
-    form.setValue("variant", newValue);
+    handleFieldChange("variant", newValue);
     form.clearErrors("variant");
   };
 
@@ -570,15 +866,30 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       values.variant?.length === 1 &&
       values.season &&
       values.year?.length === 2 &&
-      yearNum >= 2000 &&
+      yearNum >= 2009 &&
+      yearNum <= new Date().getFullYear() &&
       !hasErrors
     );
+  };
+
+  // Add this function to validate quick code at the beginning
+  const validateAndSetQuickCodeError = (value: string) => {
+    const error = validateQuickCode(value);
+    setQuickCodeError(error);
+    return error;
   };
 
   // Parse quick code input and find paper
   const handleQuickCodeSubmit = () => {
     try {
-      if (quickCodeError) return;
+      // Always validate the code first
+      const error = validateAndSetQuickCodeError(quickCode);
+      
+      // Return if there is an error or the input is empty
+      if (error || !quickCode) {
+        console.log("Quick code is empty or invalid:", error || "Empty input");
+        return;
+      }
 
       // Format examples: 9702/42/M/J/20 or 9708/11/O/N/20
       const regex = /^(\d{4})\/(\d{2})\/(F\/M|M\/J|O\/N)\/(\d{2})$/;
@@ -591,7 +902,23 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
       // Mark that quick search was used to prevent duplicate dialog
       quickSearchUsed.current = true;
+      shouldSyncQuickSearchToForm.current = true;
+      manualInputUsed.current = false;
       console.log("Setting quick search flag to true");
+      
+      // Save quick search value to storage
+      try {
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.set({quickSearchValues: {quickCode}}, () => {
+            console.log("Quick search values saved to Chrome storage");
+          });
+        } else {
+          localStorage.setItem("quickSearchValues", JSON.stringify({quickCode}));
+          console.log("Quick search values saved to localStorage");
+        }
+      } catch (error) {
+        console.error("Error saving quick search values:", error);
+      }
       
       // Destructure match without capturing unused variables
       const [, subjectCode, paperNumber, season, year] = match;
@@ -609,69 +936,81 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       else if (season === "O/N") seasonId = "w";
       else if (season === "F/M") seasonId = "m";
 
-      // First set curriculum
-      form.setValue("curriculum", subject.curriculum);
-
-      // Wait for next tick to ensure curriculum is set before setting subject
-        // Now we can set subject since curriculum is set
+      // Check if we need to change curriculum
+      if (selectedCurriculum !== subject.curriculum) {
+        console.log("Curriculum needs to change from", selectedCurriculum, "to", subject.curriculum);
+        // First set curriculum and use pendingSubject to handle the subject update after curriculum is processed
+        form.setValue("curriculum", subject.curriculum);
+        markFieldAsTouched("curriculum");
+        setSelectedCurriculum(subject.curriculum);
+        // Set the subject ID as pending to be applied after curriculum updates
+        setPendingSubject(subject.id);
+      } else {
+        // If curriculum doesn't need to change, set subject directly
         form.setValue("subject", subject.id);
+        markFieldAsTouched("subject");
+      }
 
-        // Split paperNumber into paperType and variant
-        const paperType = paperNumber.charAt(0);
-        const variant = paperNumber.charAt(1);
+      // Split paperNumber into paperType and variant
+      const paperType = paperNumber.charAt(0);
+      const variant = paperNumber.charAt(1);
 
-        // Set the rest of the form values
-        form.setValue("paperType", paperType);
-        form.setValue("variant", variant);
-        form.setValue("season", seasonId);
-        form.setValue("year", year);
+      // Set the rest of the form values
+      form.setValue("paperType", paperType);
+      form.setValue("variant", variant);
+      form.setValue("season", seasonId);
+      form.setValue("year", year);
 
-        // Also update the fullYear state with the 20XX format
-        setFullYear(`20${year}`);
+      // Also update the fullYear state with the 20XX format
+      setFullYear(`20${year}`);
 
-        // Mark fields as touched since this is a form fill
-        markFieldAsTouched("paperType");
-        markFieldAsTouched("variant");
-        markFieldAsTouched("year");
+      // Mark fields as touched since this is a form fill
+      markFieldAsTouched("paperType");
+      markFieldAsTouched("variant");
+      markFieldAsTouched("season");
+      markFieldAsTouched("year");
 
-        // Trigger validation
-        form.trigger();
+      // Trigger validation
+      form.trigger();
 
-        // Submit the form with the complete values
-        const formValues = {
-          curriculum: subject.curriculum,
-          subject: subject.id,
-          paperType,
-          variant,
-          season: seasonId,
-          year,
-        };
+      // Submit the form with the complete values
+      const formValues = {
+        curriculum: subject.curriculum,
+        subject: subject.id,
+        paperType,
+        variant,
+        season: seasonId,
+        year,
+      };
 
-        // Explicitly save form values to storage
-        console.log("Quick code submitted, saving form values:", formValues);
-        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-          chrome.storage.local.get("formValues", (result) => {
-            const existingValues = result.formValues || {};
-            const updatedValues = {...existingValues, ...formValues};
-            chrome.storage.local.set({formValues: updatedValues}, () => {
-              console.log("Form values saved to Chrome storage from quick code");
-            });
+      // Explicitly save form values to storage
+      console.log("Quick code submitted, saving form values:", formValues);
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get("formValues", (result) => {
+          const existingValues = result.formValues || {};
+          const updatedValues = {...existingValues, ...formValues};
+          chrome.storage.local.set({formValues: updatedValues}, () => {
+            console.log("Form values saved to Chrome storage from quick code");
           });
-        } else {
-          try {
-            const savedValues = localStorage.getItem("formValues");
-            const existingValues = savedValues ? JSON.parse(savedValues) : {};
-            const updatedValues = {...existingValues, ...formValues};
-            localStorage.setItem("formValues", JSON.stringify(updatedValues));
-            console.log("Form values saved to localStorage from quick code");
-          } catch (error) {
-            console.error("Error saving to localStorage from quick code:", error);
-            // Fallback
-            localStorage.setItem("formValues", JSON.stringify(formValues));
-          }
+        });
+      } else {
+        try {
+          const savedValues = localStorage.getItem("formValues");
+          const existingValues = savedValues ? JSON.parse(savedValues) : {};
+          const updatedValues = {...existingValues, ...formValues};
+          localStorage.setItem("formValues", JSON.stringify(updatedValues));
+          console.log("Form values saved to localStorage from quick code");
+        } catch (error) {
+          console.error("Error saving to localStorage from quick code:", error);
+          // Fallback
+          localStorage.setItem("formValues", JSON.stringify(formValues));
         }
+      }
 
+      // Only submit the form if we're not waiting for curriculum change
+      if (selectedCurriculum === subject.curriculum) {
         submitFormSafely(formValues);
+      }
     } catch (error) {
       console.error("Error in quick code submission:", error);
     }
@@ -689,21 +1028,83 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   const handleQuickCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
     setQuickCode(value);
-    setQuickCodeError(validateQuickCode(value));
+    validateAndSetQuickCodeError(value);
+    
+    // When user starts typing in quick search, mark that it's being used
+    if (value && !quickSearchUsed.current) {
+      quickSearchUsed.current = true;
+      shouldSyncQuickSearchToForm.current = true;
+      manualInputUsed.current = false;
+    }
+    
+    // Save quick search value to storage on every change
+    try {
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({quickSearchValues: {quickCode: value}}, () => {
+          console.log("Quick search values saved to Chrome storage on change");
+        });
+      } else {
+        localStorage.setItem("quickSearchValues", JSON.stringify({quickCode: value}));
+        console.log("Quick search values saved to localStorage on change");
+      }
+    } catch (error) {
+      console.error("Error saving quick search values on change:", error);
+    }
   };
 
   // Add this new useEffect to specifically handle loading data when preferencesLoaded changes
   useEffect(() => {
     // Only attempt to load form values when preferencesLoaded becomes true
     // AND we haven't already generated a URL
-    // AND quick search wasn't just used
-    if (preferencesLoaded && !hasGeneratedInitialUrl.current && !quickSearchUsed.current) {
-      console.log("PaperSearch: preferencesLoaded is now true, loading form values");
+    if (preferencesLoaded && !hasGeneratedInitialUrl.current) {
+      console.log("PaperSearch: preferencesLoaded is now true, loading values");
+      
+      const loadQuickSearchValues = () => {
+        try {
+          if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+            console.log("Attempting to load quick search values from Chrome storage");
+            chrome.storage.local.get("quickSearchValues", (result: {quickSearchValues?: {quickCode: string}}) => {
+              if (result.quickSearchValues && result.quickSearchValues.quickCode) {
+                console.log("Found quick search values in Chrome storage:", result.quickSearchValues);
+                setQuickCode(result.quickSearchValues.quickCode);
+                // Validate the loaded code
+                validateAndSetQuickCodeError(result.quickSearchValues.quickCode);
+                // Don't trigger handleQuickCodeSubmit automatically
+              } else {
+                console.log("No quick search values found in Chrome storage");
+              }
+            });
+          } else {
+            // Load from localStorage
+            console.log("Attempting to load quick search values from localStorage");
+            const savedValues = localStorage.getItem("quickSearchValues");
+            
+            if (savedValues) {
+              try {
+                const parsedValues = JSON.parse(savedValues) as {quickCode: string};
+                console.log("Found quick search values in localStorage:", parsedValues);
+                if (parsedValues.quickCode) {
+                  setQuickCode(parsedValues.quickCode);
+                  // Validate the loaded code
+                  validateAndSetQuickCodeError(parsedValues.quickCode);
+                  // Don't trigger handleQuickCodeSubmit automatically
+                }
+              } catch (error) {
+                console.error("Error parsing saved quick search values:", error);
+              }
+            } else {
+              console.log("No quick search values found in localStorage");
+            }
+          }
+        } catch (error) {
+          console.error("Error loading quick search from storage:", error);
+        }
+      };
       
       const loadFromStorage = () => {
         try {
           if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-            console.log("Attempting to load from Chrome storage");
+            console.log("Attempting to load form values from Chrome storage");
             chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
               if (result.formValues && Object.keys(result.formValues).length > 0) {
                 console.log("Found form values in Chrome storage:", result.formValues);
@@ -714,7 +1115,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             });
           } else {
             // Load from localStorage
-            console.log("Attempting to load from localStorage");
+            console.log("Attempting to load form values from localStorage");
             const savedValues = localStorage.getItem("formValues");
             console.log("Raw localStorage value:", savedValues);
             
@@ -731,40 +1132,55 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             }
           }
         } catch (error) {
-          console.error("Error loading from storage:", error);
+          console.error("Error loading form values from storage:", error);
         }
       };
       
       const applyFormValues = (values: FormValues) => {
         console.log("Applying form values:", values);
         
-        // Set curriculum first
-        form.setValue("curriculum", values.curriculum || "cambridge-international-a-level");
-        
-        // Wait a moment for the curriculum to be set before setting the subject
-          // Set subject
+        // Only apply form values if quick search was not previously used
+        // or we should explicitly sync from form to quick search
+        if (!quickSearchUsed.current || shouldSyncFormToQuickSearch.current) {
+          // Set curriculum first
+          form.setValue("curriculum", values.curriculum || "cambridge-international-a-level");
+          if (values.curriculum) {
+            markFieldAsTouched("curriculum");
+          }
+          
+          // Only set subject if it was explicitly set before
           if (values.subject) {
             form.setValue("subject", values.subject);
+            markFieldAsTouched("subject");
           }
           
           // Set other values
           if (values.paperType) {
             form.setValue("paperType", values.paperType);
+            markFieldAsTouched("paperType");
             form.trigger("paperType");
           }
           if (values.variant) {
             form.setValue("variant", values.variant);
+            markFieldAsTouched("variant");
             form.trigger("variant");
           }
           if (values.season) {
             form.setValue("season", values.season);
+            markFieldAsTouched("season");
+            form.trigger("season");
           }
           if (values.year) {
             form.setValue("year", values.year);
+            markFieldAsTouched("year");
             setFullYear(values.year.length === 2 ? `20${values.year}` : values.year);
+            form.trigger("year");
           }
           
-          // Validate and generate URL
+          // After applying all values, mark as initialized
+          setIsInitialized(true);
+          
+          // Validate all fields at once
           form.trigger().then(() => {
             const currentValues = form.getValues();
             if (currentValues.subject && currentValues.paperType && currentValues.variant && 
@@ -772,6 +1188,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               generateUrlFromValues(currentValues);
             }
           });
+        }
       };
       
       const generateUrlFromValues = (values: FormValues) => {
@@ -788,11 +1205,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         const paperNumber = `${values.paperType}${values.variant}`;
         const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${seasonId}${shortYear}_${paperType}_${paperNumber}.pdf`;
         
-        // Generate quick code
-        const newQuickCode = generateQuickCode(values);
-        setQuickCode(newQuickCode);
-        // Clear any existing quick code error
-        setQuickCodeError("");
+        // Only update quick code if quick search should be synced with form
+        if (shouldSyncFormToQuickSearch.current) {
+          // Generate quick code
+          const newQuickCode = generateQuickCode(values);
+          setQuickCode(newQuickCode);
+          // Clear any existing quick code error
+          setQuickCodeError("");
+        }
         
         // Find season label
         const seasonObj = seasonS.find((s) => s.id === seasonId);
@@ -816,17 +1236,30 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         );
       };
       
-      loadFromStorage();
+      // First load the quick search values
+      loadQuickSearchValues();
+      
+      // Then load the form values separately
+      if (!quickSearchUsed.current) {
+        loadFromStorage();
+      }
     }
   }, [preferencesLoaded, form, paperType, onLinkGenerated, generateQuickCode, showDialogOnLoad]);
 
-  // Reset the URL generation flag when isClearData changes
+  // Add an effect to validate the quick code whenever it changes
   useEffect(() => {
-    if (isClearData) {
-      hasGeneratedInitialUrl.current = false;
-      quickSearchUsed.current = false;
-    }
-  }, [isClearData]);
+    // Validate on every change, even when empty (to handle initial load)
+    validateAndSetQuickCodeError(quickCode);
+  }, [quickCode]);
+
+  const handleFormSubmission = (e: React.FormEvent) => {
+    // Explicitly set that manual input is being used
+    manualInputUsed.current = true;
+    shouldSyncFormToQuickSearch.current = true;
+    quickSearchUsed.current = false;
+    console.log("Manual form submission, setting manualInputUsed to true");
+    form.handleSubmit(submitFormSafely)(e);
+  };
 
   return (
     <div className="space-y-6 w-full">
@@ -852,8 +1285,8 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             />
             <Button
               onClick={handleQuickCodeSubmit}
-              className="cursor-pointer h-full relative z-10"
-              disabled={!!quickCodeError && quickCode !== ""}
+              className={`cursor-pointer h-full relative z-10 ${(!!quickCodeError || quickCode === "") ? "opacity-50" : ""}`}
+              disabled={!!quickCodeError || quickCode === ""}
             >
               Find
               <Search className="w-4 h-4 ml" />
@@ -872,12 +1305,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
       <Form {...form}>
         <form
-          onSubmit={(e) => {
-            // Explicitly set quickSearchUsed to false when form is manually submitted
-            quickSearchUsed.current = false;
-            console.log("Manual form submission, setting quickSearchUsed to false");
-            form.handleSubmit(submitFormSafely)(e);
-          }}
+          onSubmit={handleFormSubmission}
           className="space-y-4 w-full border-2 p-5 mb-4 rounded-sm"
         >
         <Label htmlFor="curriculum" className="text-sm text-red-500">Manual Input</Label>
@@ -891,15 +1319,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             <select
               id="curriculum"
               className="w-full p-2 border rounded-md cursor-pointer"
-              value={form.getValues().curriculum || ""}
+              value={selectedCurriculum}
               onChange={(e) => {
-                form.setValue("curriculum", e.target.value);
-                form.trigger("curriculum");
+                handleCurriculumChange(e.target.value);
               }}
             >
               <option
                 value=""
-                disabled
+                hidden
                 className="dark:bg-[#323339] dark:text-white"
               >
                 Select curriculum
@@ -927,15 +1354,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             <select
               id="subject"
               className="w-full p-2 border rounded-md cursor-pointer"
-              value={form.getValues().subject || ""}
+              value={watchSubject || ""}
               onChange={(e) => {
-                form.setValue("subject", e.target.value);
-                form.trigger("subject");
+                handleSubjectChange(e.target.value);
               }}
             >
               <option
                 value=""
-                disabled
+                hidden
                 className="dark:bg-[#323339] dark:text-white"
               >
                 Select subject
@@ -975,7 +1401,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
                     className="mx-2 text-center flex-grow h-10 border rounded-md w-full "
                     type="text"
                     placeholder="e.g. 4"
-                    value={form.getValues().paperType || ""}
+                    value={watchPaperType || ""}
                     onChange={(e) => handlePaperTypeChange(e.target.value)}
                   />
                   <button
@@ -1010,7 +1436,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
                     className="mx-2 text-center flex-grow h-10 border rounded-md w-full"
                     type="text"
                     placeholder="e.g. 2"
-                    value={form.getValues().variant || ""}
+                    value={watchVariant || ""}
                     onChange={(e) => handleVariantChange(e.target.value)}
                   />
                   <button
@@ -1036,16 +1462,15 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               <select
                 id="season"
                 className="w-full p-2 border rounded-md cursor-pointer"
-                value={form.getValues().season || ""}
+                value={watchSeason || ""}
                 onChange={(e) => {
-                  form.setValue("season", e.target.value);
-                  form.trigger("season");
+                  handleSeasonChange(e.target.value);
                 }}
               >
                 <option
                   value=""
-                  disabled
-                    className="dark:bg-[#323339] dark:text-white"
+                  hidden
+                  className="dark:bg-[#323339] dark:text-white"
                 >
                   Select season
                 </option>
