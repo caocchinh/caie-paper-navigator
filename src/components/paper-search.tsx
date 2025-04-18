@@ -168,6 +168,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     if (!subject) {
       return `Subject with code ${subjectCode} is not supported yet`;
     }
+    
+    // Validate the year doesn't exceed current year
+    const yearDigits = match[4];
+    const fullYear = parseInt(`20${yearDigits}`);
+    const currentYear = new Date().getFullYear();
+    if (fullYear > currentYear) {
+      return `Year cannot exceed current year (${currentYear})`;
+    }
 
     return "";
   };
@@ -441,9 +449,10 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     } 
     // Validate year doesn't exceed current year
     else if (numericValue && parseInt(numericValue) > new Date().getFullYear()) {
+      const currentYear = new Date().getFullYear();
       form.setError("year", {
         type: "manual",
-        message: "Year cannot exceed current year",
+        message: `Year cannot exceed current year (${currentYear})`,
       });
     } else {
       form.clearErrors("year");
