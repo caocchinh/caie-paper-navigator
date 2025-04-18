@@ -61,7 +61,8 @@ interface PaperSearchProps {
           year: string;
         }
       | undefined,
-    showDialog?: boolean
+    showDialog?: boolean,
+    isQuickSearch?: boolean
   ) => void;
   isClearData: boolean;
   setIsClearData: (isClearData: boolean) => void;
@@ -262,8 +263,17 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       // Pass paper details along with the link
       console.log("Call to onLinkGenerated from submitFormSafely with showDialog=true");
       
-      // Set flag to indicate quick search was used to prevent duplicate dialog
+      // Set flag to indicate URL has been generated
       hasGeneratedInitialUrl.current = true;
+      
+      // Only set quickSearchUsed to true if this was called from handleQuickCodeSubmit
+      // If not coming from quick search submit, explicitly set it to false
+      if (!quickSearchUsed.current) {
+        console.log("Manual search used");
+        quickSearchUsed.current = false;
+      } else {
+        console.log("Quick search used");
+      }
       
       onLinkGenerated(
         url,
@@ -274,7 +284,8 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
           session: sessionLabel,
           year: shortYear,
         },
-        true
+        true,
+        quickSearchUsed.current
       );
 
       // Update quick code last to avoid triggering re-renders too early
@@ -578,6 +589,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
       // Mark that quick search was used to prevent duplicate dialog
       quickSearchUsed.current = true;
+      console.log("Setting quick search flag to true");
       
       // Destructure match without capturing unused variables
       const [, subjectCode, paperNumber, session, year] = match;
@@ -801,7 +813,8 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             session: sessionLabel,
             year: shortYear,
           },
-          showDialogOnLoad
+          showDialogOnLoad,
+          false // Initial load is not quick search
         );
       };
       
@@ -858,7 +871,12 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(submitFormSafely)}
+          onSubmit={(e) => {
+            // Explicitly set quickSearchUsed to false when form is manually submitted
+            quickSearchUsed.current = false;
+            console.log("Manual form submission, setting quickSearchUsed to false");
+            form.handleSubmit(submitFormSafely)(e);
+          }}
           className="space-y-4 w-full border-2 p-5 mb-4 rounded-sm"
         >
         <Label htmlFor="curriculum" className="text-sm text-red-500">Manual Input</Label>

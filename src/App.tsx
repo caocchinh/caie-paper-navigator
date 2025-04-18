@@ -26,6 +26,7 @@ export function App() {
   const [showDialogOnLoad, setShowDialogOnLoad] = useState(false); 
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const paperSearchRef = useRef<PaperSearchHandles>(null);
+  const quickSearchUsed = useRef(false);
 
   // Load settings from storage on component mount
   useEffect(() => {
@@ -172,13 +173,16 @@ export function App() {
   };
 
   // Handle paper details generation
-  const handlePaperGenerated = useCallback((link: string | null, details?: Omit<PaperDetails, "link">, showDialog?: boolean) => {
+  const handlePaperGenerated = useCallback((link: string | null, details?: Omit<PaperDetails, "link">, showDialog?: boolean, isQuickSearch?: boolean) => {
     if (!link) {
       setPaperDetails(null);
       return;
     }
 
-    console.log("Paper generated with showDialog:", showDialog, "showDialogOnLoad:", showDialogOnLoad);
+    // Update quickSearchUsed based on value passed from PaperSearch component
+    quickSearchUsed.current = isQuickSearch || false;
+
+    console.log("Paper generated with showDialog:", showDialog, "showDialogOnLoad:", showDialogOnLoad, "isQuickSearch:", isQuickSearch);
 
     // Only update paperDetails if needed
     setPaperDetails(prev => {
@@ -222,8 +226,8 @@ export function App() {
     console.log("Dialog open state changed to:", open);
     setDialogOpen(open);
     
-    // Focus on quick search input when dialog closes
-    if (!open && paperSearchRef.current) {
+    // Only focus on quick search input when dialog closes AND quick search was used
+    if (!open && paperSearchRef.current && quickSearchUsed.current) {
       // Use a small timeout to ensure DOM update completes
       setTimeout(() => {
         paperSearchRef.current?.focusQuickSearch();
@@ -233,13 +237,8 @@ export function App() {
   
   // Focus on quick search input when app mounts
   useEffect(() => {
-    // Only focus when preferences are loaded to ensure component is ready
-    if (preferencesLoaded && paperSearchRef.current) {
-      // Use a small timeout to ensure DOM update completes
-      setTimeout(() => {
-        paperSearchRef.current?.focusQuickSearch();
-      }, 100);
-    }
+    // No longer automatically focus on app mount
+    // This will be handled by the handleDialogOpenChange function when needed
   }, [preferencesLoaded]);
 
   return (
@@ -353,6 +352,7 @@ export function App() {
                     setPaperDetails(null);
                     setIsClearData(true);
                     handleDialogOpenChange(false);
+                    quickSearchUsed.current = false;
                   }}
                 >
                   Clear Data
