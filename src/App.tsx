@@ -262,7 +262,7 @@ export function App() {
           aria-describedby="paper-details-description"
         >
           <DialogHeader>
-            <DialogTitle>Paper Details</DialogTitle>
+            <DialogTitle className="!text-center">Paper Details</DialogTitle>
           </DialogHeader>
 
           {paperDetails && (
