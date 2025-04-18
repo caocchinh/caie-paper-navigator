@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, useEffect, useRef, useCallback} from "react";
+import {useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle} from "react";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -43,6 +43,11 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Define a type for the exposed methods
+export interface PaperSearchHandles {
+  focusQuickSearch: () => void;
+}
+
 interface PaperSearchProps {
   paperType: "qp" | "ms";
   onLinkGenerated: (
@@ -64,14 +69,14 @@ interface PaperSearchProps {
   showDialogOnLoad?: boolean;
 }
 
-export function PaperSearch({
+export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   paperType, 
   onLinkGenerated, 
   isClearData, 
   setIsClearData,
   preferencesLoaded = true,
   showDialogOnLoad
-}: PaperSearchProps) {
+}, ref) => {
   const [quickCode, setQuickCode] = useState<string>("");
   const [fullYear, setFullYear] = useState<string>("");
   const [quickCodeError, setQuickCodeError] = useState<string>("");
@@ -85,6 +90,16 @@ export function PaperSearch({
   const hasMountedRef = useRef(false);
   const hasGeneratedInitialUrl = useRef(false);
   const quickSearchUsed = useRef(false);
+  const quickSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Expose the focus method to parent components
+  useImperativeHandle(ref, () => ({
+    focusQuickSearch: () => {
+      if (quickSearchInputRef.current) {
+        quickSearchInputRef.current.focus();
+      }
+    }
+  }));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -264,6 +279,8 @@ export function PaperSearch({
 
       // Update quick code last to avoid triggering re-renders too early
       setQuickCode(newQuickCode);
+      // Clear any existing quick code error since we're setting a valid code
+      setQuickCodeError("");
     },
     [paperType, onLinkGenerated, generateQuickCode]
   );
@@ -764,6 +781,8 @@ export function PaperSearch({
         // Generate quick code
         const newQuickCode = generateQuickCode(values);
         setQuickCode(newQuickCode);
+        // Clear any existing quick code error
+        setQuickCodeError("");
         
         // Find session label
         const sessionObj = SESSIONS.find((s) => s.id === sessionId);
@@ -811,6 +830,7 @@ export function PaperSearch({
             onChange={handleQuickCodeChange}
             onKeyDown={handleKeyDown}
             className={`max-w-md text-center ${quickCodeError ? "border-red-500" : ""}`}
+            ref={quickSearchInputRef}
           />
           <div className="h-full relative">
             <GlowEffect
@@ -1082,4 +1102,4 @@ export function PaperSearch({
               </button>
     </div>
   );
-}
+});

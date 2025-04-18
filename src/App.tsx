@@ -1,7 +1,7 @@
-import {useState, useEffect, useCallback} from "react";
+import {useState, useEffect, useCallback, useRef} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
-import {PaperSearch} from "@/components/paper-search";
+import {PaperSearch, PaperSearchHandles} from "@/components/paper-search";
 import {ExternalLink, Github, Trash, X} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -25,6 +25,7 @@ export function App() {
   const [showPinRecommendation, setShowPinRecommendation] = useState(true);
   const [showDialogOnLoad, setShowDialogOnLoad] = useState(false); 
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const paperSearchRef = useRef<PaperSearchHandles>(null);
 
   // Load settings from storage on component mount
   useEffect(() => {
@@ -220,12 +221,31 @@ export function App() {
   const handleDialogOpenChange = (open: boolean) => {
     console.log("Dialog open state changed to:", open);
     setDialogOpen(open);
+    
+    // Focus on quick search input when dialog closes
+    if (!open && paperSearchRef.current) {
+      // Use a small timeout to ensure DOM update completes
+      setTimeout(() => {
+        paperSearchRef.current?.focusQuickSearch();
+      }, 100);
+    }
   };
+  
+  // Focus on quick search input when app mounts
+  useEffect(() => {
+    // Only focus when preferences are loaded to ensure component is ready
+    if (preferencesLoaded && paperSearchRef.current) {
+      // Use a small timeout to ensure DOM update completes
+      setTimeout(() => {
+        paperSearchRef.current?.focusQuickSearch();
+      }, 100);
+    }
+  }, [preferencesLoaded]);
 
   return (
     <div className="min-h-screen flex flex-col justify-between w-full items-center bg-white dark:bg-primary-foreground">
       {showPinRecommendation && (
-        <div className="bg-blue-50 py-3 px-5 flex items-center justify-between w-full sticky top-0 z-10">
+        <div className="bg-blue-50 py-3 px-5 flex items-center justify-between w-full sticky top-0 z-[10000]">
           <p className="text-sm text-blue-700">
             📌 Pin this extension for better user experience and quick access
           </p>
@@ -246,6 +266,7 @@ export function App() {
           </h2>
         <div className="max-w-xl mx-auto px-7">
         <PaperSearch
+            ref={paperSearchRef}
             paperType="qp"
             onLinkGenerated={handlePaperGenerated}
             isClearData={isClearData}
