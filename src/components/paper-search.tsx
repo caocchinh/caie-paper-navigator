@@ -851,7 +851,7 @@ export function PaperSearch({
               <option
                 value=""
                 disabled
-                className="dark:bg-primary dark:text-white"
+                className="dark:bg-[#323339] dark:text-white"
               >
                 Select curriculum
               </option>
@@ -859,7 +859,7 @@ export function PaperSearch({
                 <option
                   key={curriculum.id}
                   value={curriculum.id}
-                  className="dark:bg-primary dark:text-white"
+                  className="dark:bg-[#323339] dark:text-white"
                 >
                   {curriculum.label}
                 </option>
@@ -887,7 +887,7 @@ export function PaperSearch({
               <option
                 value=""
                 disabled
-                className="dark:bg-primary dark:text-white"
+                className="dark:bg-[#323339] dark:text-white"
               >
                 Select subject
               </option>
@@ -895,7 +895,7 @@ export function PaperSearch({
                 <option
                   key={subject.id}
                   value={subject.id}
-                  className="dark:bg-primary dark:text-white"
+                  className="dark:bg-[#323339] dark:text-white"
                 >
                   {subject.label} ({subject.code})
                 </option>
@@ -916,7 +916,7 @@ export function PaperSearch({
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-[#36373e] active:bg-gray-200 aspect-square"
                     onClick={decrementPaperType}
                   >
                     <Minus className="w-4 h-4" />
@@ -931,7 +931,7 @@ export function PaperSearch({
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-[#36373e] active:bg-gray-200 aspect-square"
                     onClick={incrementPaperType}
                   >
                     <Plus className="w-4 h-4" />
@@ -951,7 +951,7 @@ export function PaperSearch({
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-[#36373e] active:bg-gray-200 aspect-square"
                     onClick={decrementVariant}
                   >
                     <Minus className="w-4 h-4" />
@@ -966,7 +966,7 @@ export function PaperSearch({
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-[#36373e] active:bg-gray-200 aspect-square"
                     onClick={incrementVariant}
                   >
                     <Plus className="w-4 h-4" />
@@ -996,7 +996,7 @@ export function PaperSearch({
                 <option
                   value=""
                   disabled
-                  className="dark:bg-primary dark:text-white"
+                    className="dark:bg-[#323339] dark:text-white"
                 >
                   Select season
                 </option>
@@ -1004,7 +1004,7 @@ export function PaperSearch({
                   <option
                     key={session.id}
                     value={session.id}
-                    className="dark:bg-primary dark:text-white"
+                    className="dark:bg-[#323339] dark:text-white"
                   >
                     {session.label} - {session.fullName}
                   </option>
@@ -1023,7 +1023,7 @@ export function PaperSearch({
               <div className="flex items-center">
                 <button
                   type="button"
-                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer aspect-square"
+                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-[#36373e] active:bg-gray-200 aspect-square"
                   onClick={decrementYear}
                 >
                   <Minus className="w-4 h-4" />
@@ -1038,7 +1038,7 @@ export function PaperSearch({
                 />
                 <button
                   type="button"
-                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer aspect-square"
+                  className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-[#36373e] active:bg-gray-200 aspect-square"
                   onClick={incrementYear}
                 >
                   <Plus className="w-4 h-4" />
