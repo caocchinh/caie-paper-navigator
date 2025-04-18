@@ -31,10 +31,18 @@ export function App() {
   // Load settings from storage on component mount
   useEffect(() => {
     // Function to load settings from either Chrome storage or localStorage
+    interface FormValues {
+      year: string;
+      season: string;
+      paperType: string;
+      variant: string;
+      curriculum: string;
+      subject: string;
+    }
     const loadSettings = () => {
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         try {
-          chrome.storage.local.get(['hidePinRecommendation', 'showDialogOnLoad'], (result) => {
+          chrome.storage.local.get(['hidePinRecommendation', 'showDialogOnLoad',"formValues"], (result) => {
             // Pin recommendation
             const isHidden = result.hidePinRecommendation === true;
             setShowPinRecommendation(!isHidden);
@@ -42,13 +50,19 @@ export function App() {
             // Dialog on load - default to true if not set
             const dialogOnLoad = typeof result.showDialogOnLoad === 'boolean' ? result.showDialogOnLoad : true;
             
-            // Force state update to trigger rerender
-            setShowDialogOnLoad(false);
             
             // Then set the actual value after a small delay
-              setShowDialogOnLoad(dialogOnLoad);
-              setPreferencesLoaded(true);
-          });
+              const formValues : FormValues = result.formValues as FormValues;
+              const currentYear = new Date().getFullYear();
+              const yearNum = parseInt(`20${formValues.year}`);
+              if (yearNum > currentYear || yearNum < 2009) {
+                setShowDialogOnLoad(false);
+              } else {
+                setShowDialogOnLoad(dialogOnLoad);
+              }
+          setPreferencesLoaded(true);
+
+        });
         } catch (error) {
           console.error("Error loading from Chrome storage:", error);
           // Fall back to localStorage
@@ -74,11 +88,16 @@ export function App() {
         // Parse value - default to true unless explicitly set to 'false'
         const parsedValue = dialogOnLoad !== 'false';
         
-        // Force state update to trigger rerender
-        setShowDialogOnLoad(false);
-        
-        // Then set the actual value after a small delay
+        const formValues : FormValues = JSON.parse(localStorage.getItem('formValues') || '{}');
+
+        const currentYear =  new Date().getFullYear();
+        const yearNum = parseInt(`20${formValues.year}`);
+
+        if (yearNum > currentYear || yearNum < 2009) {
+          setShowDialogOnLoad(false);
+        } else {
           setShowDialogOnLoad(parsedValue);
+        }
           setPreferencesLoaded(true);
       } catch (error) {
         console.error('Error accessing localStorage:', error);
@@ -86,7 +105,7 @@ export function App() {
         setPreferencesLoaded(true);
         
         // Default to true when there's an error
-        setShowDialogOnLoad(true);
+        setShowDialogOnLoad(false);
       }
     };
     

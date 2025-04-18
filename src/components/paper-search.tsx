@@ -44,7 +44,7 @@ const formSchema = z.object({
         const currentYear = new Date().getFullYear();
         return yearNum <= currentYear;
       },
-      {message: "Year cannot exceed current year"}
+      {message: `Year cannot exceed current year ${new Date().getFullYear()}`}
     ),
 });
 
