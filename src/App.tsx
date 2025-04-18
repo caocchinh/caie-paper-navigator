@@ -46,10 +46,8 @@ export function App() {
             setShowDialogOnLoad(false);
             
             // Then set the actual value after a small delay
-            setTimeout(() => {
               setShowDialogOnLoad(dialogOnLoad);
               setPreferencesLoaded(true);
-            }, 50);
           });
         } catch (error) {
           console.error("Error loading from Chrome storage:", error);
@@ -80,10 +78,8 @@ export function App() {
         setShowDialogOnLoad(false);
         
         // Then set the actual value after a small delay
-        setTimeout(() => {
           setShowDialogOnLoad(parsedValue);
           setPreferencesLoaded(true);
-        }, 50);
       } catch (error) {
         console.error('Error accessing localStorage:', error);
         // Even on error, mark as loaded to not block the app
@@ -205,9 +201,7 @@ export function App() {
     // Only focus on quick search input when dialog closes AND quick search was used
     if (!open && paperSearchRef.current && quickSearchUsed.current) {
       // Use a small timeout to ensure DOM update completes
-      setTimeout(() => {
         paperSearchRef.current?.focusQuickSearch();
-      }, 100);
     }
   };
   

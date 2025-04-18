@@ -317,58 +317,52 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
   // Save form values whenever they change
   useEffect(() => {
-    // Debounce storage save to prevent conflicts with user input
-    let saveTimeout: NodeJS.Timeout;
 
     const saveFormValues = (values: Partial<FormValues>) => {
-      clearTimeout(saveTimeout);
+      try {
+        if (values && Object.keys(values).length > 0) {
+          // Filter out empty values
+          const validValues: Record<string, string> = {};
+          Object.entries(values).forEach(([key, value]) => {
+            if (value && typeof value === "string" && value.trim() !== "") {
+              validValues[key] = value;
+            }
+          });
 
-      saveTimeout = setTimeout(() => {
-        try {
-          if (values && Object.keys(values).length > 0) {
-            // Filter out empty values
-            const validValues: Record<string, string> = {};
-            Object.entries(values).forEach(([key, value]) => {
-              if (value && typeof value === "string" && value.trim() !== "") {
-                validValues[key] = value;
-              }
-            });
-
-            if (Object.keys(validValues).length > 0) {
-              console.log("Saving form values to storage:", validValues);
-              if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-                // Get existing values first to avoid wiping out values
-                chrome.storage.local.get("formValues", (result) => {
-                  const existingValues = result.formValues || {};
-                  const updatedValues = {...existingValues, ...validValues};
-                  chrome.storage.local.set({formValues: updatedValues}, () => {
-                    console.log("Form values saved to Chrome storage");
-                  });
+          if (Object.keys(validValues).length > 0) {
+            console.log("Saving form values to storage:", validValues);
+            if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+              // Get existing values first to avoid wiping out values
+              chrome.storage.local.get("formValues", (result) => {
+                const existingValues = result.formValues || {};
+                const updatedValues = {...existingValues, ...validValues};
+                chrome.storage.local.set({formValues: updatedValues}, () => {
+                  console.log("Form values saved to Chrome storage");
                 });
-              } else {
-                // For localStorage, get existing values first before saving
+              });
+            } else {
+              // For localStorage, get existing values first before saving
+              try {
+                const savedValues = localStorage.getItem("formValues");
+                const existingValues = savedValues ? JSON.parse(savedValues) : {};
+                const updatedValues = {...existingValues, ...validValues};
+                localStorage.setItem("formValues", JSON.stringify(updatedValues));
+                console.log("Form values saved to localStorage");
+              } catch (error) {
+                console.error("Error parsing or saving to localStorage:", error);
+                // Fallback to direct save attempt
                 try {
-                  const savedValues = localStorage.getItem("formValues");
-                  const existingValues = savedValues ? JSON.parse(savedValues) : {};
-                  const updatedValues = {...existingValues, ...validValues};
-                  localStorage.setItem("formValues", JSON.stringify(updatedValues));
-                  console.log("Form values saved to localStorage");
-                } catch (error) {
-                  console.error("Error parsing or saving to localStorage:", error);
-                  // Fallback to direct save attempt
-                  try {
-                    localStorage.setItem("formValues", JSON.stringify(validValues));
-                  } catch (fallbackError) {
-                    console.error("Fallback localStorage save failed:", fallbackError);
-                  }
+                  localStorage.setItem("formValues", JSON.stringify(validValues));
+                } catch (fallbackError) {
+                  console.error("Fallback localStorage save failed:", fallbackError);
                 }
               }
             }
           }
-        } catch (error) {
-          console.error("Error saving form values:", error);
         }
-      }, 500); // Add debounce delay
+      } catch (error) {
+        console.error("Error saving form values:", error);
+      }
     };
 
     // Watch for form changes only after component is mounted
@@ -381,7 +375,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(saveTimeout);
     };
   }, [form]);
 
@@ -620,7 +613,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       form.setValue("curriculum", subject.curriculum);
 
       // Wait for next tick to ensure curriculum is set before setting subject
-      setTimeout(() => {
         // Now we can set subject since curriculum is set
         form.setValue("subject", subject.id);
 
@@ -680,7 +672,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         }
 
         submitFormSafely(formValues);
-      }, 0);
     } catch (error) {
       console.error("Error in quick code submission:", error);
     }
@@ -751,7 +742,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         form.setValue("curriculum", values.curriculum || "cambridge-international-a-level");
         
         // Wait a moment for the curriculum to be set before setting the subject
-        setTimeout(() => {
           // Set subject
           if (values.subject) {
             form.setValue("subject", values.subject);
@@ -782,7 +772,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               generateUrlFromValues(currentValues);
             }
           });
-        }, 100);
       };
       
       const generateUrlFromValues = (values: FormValues) => {
