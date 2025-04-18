@@ -9,5 +9,10 @@
   },
   "icons": {
     "64": "vectr.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "caie-paper-navigator@chinhcaocu"
+    }
   }
 }

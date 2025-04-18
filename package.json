@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "copy-assets": "node copy-assets.js",
+    "create-zip": "node create-zip.js",
+    "package": "npm run build && npm run copy-assets && npm run create-zip",
+    "build:extension": "node build.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
