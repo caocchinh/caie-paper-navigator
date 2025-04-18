@@ -149,7 +149,7 @@ export function PaperSearch({
     const subjectCode = match[1];
     const subject = SUBJECTS.find((s) => s.code === subjectCode);
     if (!subject) {
-      return `Subject with code ${subjectCode} not found`;
+      return `Subject with code ${subjectCode} is not supported yet`;
     }
 
     return "";
@@ -560,7 +560,7 @@ export function PaperSearch({
       // Find subject by code
       const subject = SUBJECTS.find((s) => s.code === subjectCode);
       if (!subject) {
-        setQuickCodeError(`Subject with code ${subjectCode} not found`);
+        setQuickCodeError(`Subject with code ${subjectCode} is not supported yet`);
         return;
       }
 
@@ -741,7 +741,7 @@ export function PaperSearch({
       const generateUrlFromValues = (values: FormValues) => {
         const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
         if (!selectedSubject) {
-          console.log("Subject not found");
+          console.log("Subject is not supported yet");
           return;
         }
         
@@ -851,7 +851,7 @@ export function PaperSearch({
               <option
                 value=""
                 disabled
-                className="dark:bg-black dark:text-white"
+                className="dark:bg-primary dark:text-white"
               >
                 Select curriculum
               </option>
@@ -859,7 +859,7 @@ export function PaperSearch({
                 <option
                   key={curriculum.id}
                   value={curriculum.id}
-                  className="dark:bg-black dark:text-white"
+                  className="dark:bg-primary dark:text-white"
                 >
                   {curriculum.label}
                 </option>
@@ -887,7 +887,7 @@ export function PaperSearch({
               <option
                 value=""
                 disabled
-                className="dark:bg-black dark:text-white"
+                className="dark:bg-primary dark:text-white"
               >
                 Select subject
               </option>
@@ -895,7 +895,7 @@ export function PaperSearch({
                 <option
                   key={subject.id}
                   value={subject.id}
-                  className="dark:bg-black dark:text-white"
+                  className="dark:bg-primary dark:text-white"
                 >
                   {subject.label} ({subject.code})
                 </option>
@@ -916,7 +916,7 @@ export function PaperSearch({
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
                     onClick={decrementPaperType}
                   >
                     <Minus className="w-4 h-4" />
@@ -931,7 +931,7 @@ export function PaperSearch({
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
                     onClick={incrementPaperType}
                   >
                     <Plus className="w-4 h-4" />
@@ -951,7 +951,7 @@ export function PaperSearch({
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
                     onClick={decrementVariant}
                   >
                     <Minus className="w-4 h-4" />
@@ -966,7 +966,7 @@ export function PaperSearch({
                   />
                   <button
                     type="button"
-                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-black/75 active:bg-gray-200 aspect-square"
+                    className="h-10 w-10 border rounded-md flex items-center justify-center cursor-pointer dark:active:bg-primary/75 active:bg-gray-200 aspect-square"
                     onClick={incrementVariant}
                   >
                     <Plus className="w-4 h-4" />
@@ -996,7 +996,7 @@ export function PaperSearch({
                 <option
                   value=""
                   disabled
-                  className="dark:bg-black dark:text-white"
+                  className="dark:bg-primary dark:text-white"
                 >
                   Select season
                 </option>
@@ -1004,7 +1004,7 @@ export function PaperSearch({
                   <option
                     key={session.id}
                     value={session.id}
-                    className="dark:bg-black dark:text-white"
+                    className="dark:bg-primary dark:text-white"
                   >
                     {session.label} - {session.fullName}
                   </option>
@@ -1052,7 +1052,7 @@ export function PaperSearch({
           <div className="mt-4">
               <button
                 type="submit"
-                className={`w-full p-2 text-white rounded-md cursor-pointer bg-black dark:bg-white dark:text-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
+                className={`w-full p-2 text-white rounded-md cursor-pointer bg-primary dark:bg-white dark:text-black ${!isFormValid() && "opacity-50 pointer-events-none"}`}
                 disabled={!isFormValid() || form.formState.isSubmitting}
               >
                 {!isFormValid() ? "Please fill all fields" : "Find Paper"}
