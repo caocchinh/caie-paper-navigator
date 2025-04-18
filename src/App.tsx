@@ -361,7 +361,7 @@ export function App() {
                         Show dialog on startup
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Automatically show this dialog when existing valid paper data is found
+                        Automatically show this dialog when existing valid paper data is found in manual input
                       </p>
                     </div>
                     <Switch

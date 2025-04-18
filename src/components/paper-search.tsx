@@ -169,7 +169,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   // Load initial curriculum from storage - run this before any other effects
   useEffect(() => {
     if (!hasMountedRef.current) {
-      console.log("Loading initial curriculum from storage");
       
       // Try localStorage first (synchronous)
       try {
@@ -177,7 +176,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         if (savedValues) {
           const parsedValues = JSON.parse(savedValues) as FormValues;
           if (parsedValues.curriculum) {
-            console.log("Found curriculum in localStorage:", parsedValues.curriculum);
             // Update local state directly
             setSelectedCurriculum(parsedValues.curriculum);
             // Also update form
@@ -193,7 +191,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
         chrome.storage.local.get("formValues", (result: {formValues?: FormValues}) => {
           if (result.formValues && result.formValues.curriculum) {
-            console.log("Found curriculum in Chrome storage:", result.formValues.curriculum);
             // Update local state directly
             setSelectedCurriculum(result.formValues.curriculum);
             // Also update form
@@ -250,7 +247,6 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               const existingValues = result.formValues || {};
               const updatedValues = {...existingValues, ...formValues};
               chrome.storage.local.set({formValues: updatedValues}, () => {
-                console.log("Form values saved to Chrome storage on submission");
               });
               
               // If quick search was used, also update quick search values
