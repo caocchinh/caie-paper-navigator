@@ -503,29 +503,23 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   useEffect(() => {
     const saveFormValues = (values: Partial<FormValues>) => {
       try {
-        if (values && Object.keys(values).length > 0) {
-          // Filter out empty values
-          const validValues: Record<string, string> = {};
-          Object.entries(values).forEach(([key, value]) => {
-            if (value && typeof value === "string" && value.trim() !== "") {
-              validValues[key] = value;
-            }
-          });
+        if (values && Object.keys(values).length > 0) {         
 
-          if (Object.keys(validValues).length > 0) {
-            console.log("Saving form values to storage:", validValues);
+          if (Object.keys(values).length > 0) {
+            console.log("Saving form values to storage:", values);
             if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
               // Get existing values first to avoid wiping out values
               chrome.storage.local.get("formValues", (result) => {
                 const existingValues = result.formValues || {};
-                const updatedValues = {...existingValues, ...validValues};
+                const updatedValues = {...existingValues, ...values};
+                console.log(updatedValues, "skibidiiiiiiiiiiiiiiiiiiiii")
                 chrome.storage.local.set({formValues: updatedValues}, () => {
                   console.log("Form values saved to Chrome storage");
                 });
                 
                 // If we should sync form to quick search, update quick search values
                 if (shouldSyncFormToQuickSearch.current) {
-                  const completeValues = {...existingValues, ...validValues} as FormValues;
+                  const completeValues = {...existingValues, ...values} as FormValues;
                   if (completeValues.subject && completeValues.paperType && 
                       completeValues.variant && completeValues.season && completeValues.year) {
                     const newQuickCode = generateQuickCode(completeValues);
@@ -540,13 +534,13 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
               try {
                 const savedValues = localStorage.getItem("formValues");
                 const existingValues = savedValues ? JSON.parse(savedValues) : {};
-                const updatedValues = {...existingValues, ...validValues};
+                const updatedValues = {...existingValues, ...values};
                 localStorage.setItem("formValues", JSON.stringify(updatedValues));
                 console.log("Form values saved to localStorage");
                 
                 // If we should sync form to quick search, update quick search values
                 if (shouldSyncFormToQuickSearch.current) {
-                  const completeValues = {...existingValues, ...validValues} as FormValues;
+                  const completeValues = {...existingValues, ...values} as FormValues;
                   if (completeValues.subject && completeValues.paperType && 
                       completeValues.variant && completeValues.season && completeValues.year) {
                     const newQuickCode = generateQuickCode(completeValues);
@@ -558,7 +552,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
                 console.error("Error parsing or saving to localStorage:", error);
                 // Fallback to direct save attempt
                 try {
-                  localStorage.setItem("formValues", JSON.stringify(validValues));
+                  localStorage.setItem("formValues", JSON.stringify(values));
                 } catch (fallbackError) {
                   console.error("Fallback localStorage save failed:", fallbackError);
                 }
@@ -641,46 +635,20 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
   // Update the curriculum and subject handlers
   const handleCurriculumChange = (value: string) => {
     // Update local state immediately
-    setSelectedCurriculum(value);
-    // Then update form
-    handleFieldChange("curriculum", value);
-    // Reset subject when curriculum changes
+    handleFieldChange("subject", "");
     form.setValue("subject", "");
     form.trigger("subject");
-    
-    // Update storage with reset subject
-    try {
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get("formValues", (result) => {
-          const existingValues = result.formValues || {};
-          const updatedValues = {...existingValues, curriculum: value, subject: ""};
-          chrome.storage.local.set({formValues: updatedValues}, () => {
-            console.log("Storage updated with new curriculum and reset subject");
-          });
-        });
-      } else {
-        try {
-          const savedValues = localStorage.getItem("formValues");
-          const existingValues = savedValues ? JSON.parse(savedValues) : {};
-          const updatedValues = {...existingValues, curriculum: value, subject: ""};
-          localStorage.setItem("formValues", JSON.stringify(updatedValues));
-          console.log("localStorage updated with new curriculum and reset subject");
-        } catch (error) {
-          console.error("Error updating localStorage after curriculum change:", error);
-          // Fallback direct save
-          localStorage.setItem("formValues", JSON.stringify({curriculum: value, subject: ""}));
-        }
-      }
-    } catch (error) {
-      console.error("Error updating storage after curriculum change:", error);
-    }
+    console.log("curriculum changed")
+    handleFieldChange("curriculum", value);
+    setSelectedCurriculum(value);
+    // Then update form
+    // Reset subject when curriculum changes
+
   };
 
   const handleSubjectChange = (value: string) => {
     // Prevent empty selection
-    if (value === "") {
-      return;
-    }
+    
     handleFieldChange("subject", value);
   };
 
