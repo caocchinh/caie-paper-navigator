@@ -1262,7 +1262,9 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         ) : (
          <>
           <p className="text-xs text-muted-foreground"><span className="font-bold">Enter code in format: </span>[Subject Code]/[Paper Number]/[Season]/[Year]</p>
-          <p className="text-xs text-muted-foreground"><span className="font-bold">Tip:</span> Press enter twice to access the marking scheme quickly</p></>
+          <p className="text-xs text-muted-foreground"><span className="font-bold">Tip:</span> Press enter twice to access the marking scheme quickly</p>
+          <p className="text-xs text-muted-foreground"><span className="font-bold">Note:</span>Using quick search will update the manual input fields</p>
+          </>
 
         )}
       </div>
