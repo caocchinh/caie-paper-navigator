@@ -4,7 +4,7 @@ import {useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandl
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {CURRICULUMS, SESSIONS, SUBJECTS} from "@/lib/constants";
+import {CURRICULUMS, seasonS, SUBJECTS} from "@/lib/constants";
 import {Form} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -20,7 +20,7 @@ const formSchema = z.object({
     .length(1, {message: "Please enter a valid paper type"})
     .refine((val) => val !== "0", {message: "Paper type cannot be 0"}),
   variant: z.string().length(1, {message: "Please enter a valid variant"}),
-  session: z.string(),
+  season: z.string(),
   year: z
     .string()
     .length(2, {message: "Please enter a valid year"})
@@ -57,7 +57,7 @@ interface PaperSearchProps {
           subjectCode: string;
           subjectName: string;
           paperNumber: string;
-          session: string;
+          season: string;
           year: string;
         }
       | undefined,
@@ -109,7 +109,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       subject: "",
       paperType: "",
       variant: "",
-      session: "",
+      season: "",
       year: "",
     },
   });
@@ -201,14 +201,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
     if (!selectedSubject) return "";
 
-    // Map session ID back to the format used in quick code
-    let sessionCode = "";
-    if (values.session === "s") sessionCode = "M/J";
-    else if (values.session === "w") sessionCode = "O/N";
-    else if (values.session === "m") sessionCode = "F/M";
+    // Map season ID back to the format used in quick code
+    let seasonCode = "";
+    if (values.season === "s") seasonCode = "M/J";
+    else if (values.season === "w") seasonCode = "O/N";
+    else if (values.season === "m") seasonCode = "F/M";
 
     const paperNumber = `${values.paperType}${values.variant}`;
-    return `${selectedSubject.code}/${paperNumber}/${sessionCode}/${values.year}`;
+    return `${selectedSubject.code}/${paperNumber}/${seasonCode}/${values.year}`;
   }, []);
 
   // Submit form without causing infinite loops
@@ -253,20 +253,20 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       saveFormValuesToStorage(values);
 
       const subjectCode = selectedSubject.code;
-      const sessionId = values.session;
+      const seasonId = values.season;
       const year = `20${values.year}`;
       const shortYear = values.year;
       const paperNumber = `${values.paperType}${values.variant}`;
 
       // Format URL
-      const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
+      const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${seasonId}${shortYear}_${paperType}_${paperNumber}.pdf`;
 
       // Generate quick code without directly updating state
       const newQuickCode = generateQuickCode(values);
 
-      // Find session label
-      const sessionObj = SESSIONS.find((s) => s.id === sessionId);
-      const sessionLabel = sessionObj ? sessionObj.label : "";
+      // Find season label
+      const seasonObj = seasonS.find((s) => s.id === seasonId);
+      const seasonLabel = seasonObj ? seasonObj.label : "";
 
       // Pass paper details along with the link
       console.log("Call to onLinkGenerated from submitFormSafely with showDialog=true");
@@ -289,7 +289,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
           subjectCode: selectedSubject.code,
           subjectName: selectedSubject.label,
           paperNumber: paperNumber,
-          session: sessionLabel,
+          season: seasonLabel,
           year: shortYear,
         },
         true,
@@ -406,7 +406,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
     // 3. Either paperType changed or this is the initial load
     if (isInitialized && initialLoadDone.current) {
       const values = form.getValues();
-      const hasRequiredValues = values.subject && values.paperType && values.variant && values.session && values.year;
+      const hasRequiredValues = values.subject && values.paperType && values.variant && values.season && values.year;
 
       if (hasRequiredValues && (paperTypeChangeRef.current || !formValuesRef.current)) {
         // Reset the flag
@@ -575,7 +575,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       values.paperType?.length === 1 &&
       values.paperType !== "0" &&
       values.variant?.length === 1 &&
-      values.session &&
+      values.season &&
       values.year?.length === 2 &&
       yearNum >= 2000 &&
       !hasErrors
@@ -601,7 +601,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       console.log("Setting quick search flag to true");
       
       // Destructure match without capturing unused variables
-      const [, subjectCode, paperNumber, session, year] = match;
+      const [, subjectCode, paperNumber, season, year] = match;
 
       // Find subject by code
       const subject = SUBJECTS.find((s) => s.code === subjectCode);
@@ -610,11 +610,11 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         return;
       }
 
-      // Map session to the correct format
-      let sessionId = "";
-      if (session === "M/J") sessionId = "s";
-      else if (session === "O/N") sessionId = "w";
-      else if (session === "F/M") sessionId = "m";
+      // Map season to the correct format
+      let seasonId = "";
+      if (season === "M/J") seasonId = "s";
+      else if (season === "O/N") seasonId = "w";
+      else if (season === "F/M") seasonId = "m";
 
       // First set curriculum
       form.setValue("curriculum", subject.curriculum);
@@ -631,7 +631,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         // Set the rest of the form values
         form.setValue("paperType", paperType);
         form.setValue("variant", variant);
-        form.setValue("session", sessionId);
+        form.setValue("season", seasonId);
         form.setValue("year", year);
 
         // Also update the fullYear state with the 20XX format
@@ -651,7 +651,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
           subject: subject.id,
           paperType,
           variant,
-          session: sessionId,
+          season: seasonId,
           year,
         };
 
@@ -766,8 +766,8 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             form.setValue("variant", values.variant);
             form.trigger("variant");
           }
-          if (values.session) {
-            form.setValue("session", values.session);
+          if (values.season) {
+            form.setValue("season", values.season);
           }
           if (values.year) {
             form.setValue("year", values.year);
@@ -778,7 +778,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
           form.trigger().then(() => {
             const currentValues = form.getValues();
             if (currentValues.subject && currentValues.paperType && currentValues.variant && 
-                currentValues.session && currentValues.year) {
+                currentValues.season && currentValues.year) {
               generateUrlFromValues(currentValues);
             }
           });
@@ -793,11 +793,11 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         }
         
         const subjectCode = selectedSubject.code;
-        const sessionId = values.session;
+        const seasonId = values.season;
         const year = `20${values.year}`;
         const shortYear = values.year;
         const paperNumber = `${values.paperType}${values.variant}`;
-        const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${sessionId}${shortYear}_${paperType}_${paperNumber}.pdf`;
+        const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${seasonId}${shortYear}_${paperType}_${paperNumber}.pdf`;
         
         // Generate quick code
         const newQuickCode = generateQuickCode(values);
@@ -805,9 +805,9 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         // Clear any existing quick code error
         setQuickCodeError("");
         
-        // Find session label
-        const sessionObj = SESSIONS.find((s) => s.id === sessionId);
-        const sessionLabel = sessionObj ? sessionObj.label : "";
+        // Find season label
+        const seasonObj = seasonS.find((s) => s.id === seasonId);
+        const seasonLabel = seasonObj ? seasonObj.label : "";
         
         // Mark that we've generated a URL to prevent infinite loops
         hasGeneratedInitialUrl.current = true;
@@ -819,7 +819,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
             subjectCode: selectedSubject.code,
             subjectName: selectedSubject.label,
             paperNumber: paperNumber,
-            session: sessionLabel,
+            season: seasonLabel,
             year: shortYear,
           },
           showDialogOnLoad,
@@ -874,7 +874,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         {quickCodeError ? (
           <p className="text-xs text-red-500">{quickCodeError}</p>
         ) : (
-          <p className="text-xs text-muted-foreground">Enter code in format: [Subject Code]/[Paper Number]/[Session]/[Year]</p>
+          <p className="text-xs text-muted-foreground">Enter code in format: [Subject Code]/[Paper Number]/[Season]/[Year]</p>
         )}
       </div>
 
@@ -1036,18 +1036,18 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
             <div>
               <label
-                htmlFor="session"
+                htmlFor="season"
                 className="block text-sm font-medium mb-1"
               >
                 Exam Season
               </label>
               <select
-                id="session"
+                id="season"
                 className="w-full p-2 border rounded-md cursor-pointer"
-                value={form.getValues().session || ""}
+                value={form.getValues().season || ""}
                 onChange={(e) => {
-                  form.setValue("session", e.target.value);
-                  form.trigger("session");
+                  form.setValue("season", e.target.value);
+                  form.trigger("season");
                 }}
               >
                 <option
@@ -1057,17 +1057,17 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
                 >
                   Select season
                 </option>
-                {SESSIONS.map((session) => (
+                {seasonS.map((season) => (
                   <option
-                    key={session.id}
-                    value={session.id}
+                    key={season.id}
+                    value={season.id}
                     className="dark:bg-[#323339] dark:text-white"
                   >
-                    {session.label} - {session.fullName}
+                    {season.label} - {season.fullName}
                   </option>
                 ))}
               </select>
-              {form.formState.errors.session && <p className="text-xs text-red-500 mt-1">{form.formState.errors.session.message}</p>}
+              {form.formState.errors.season && <p className="text-xs text-red-500 mt-1">{form.formState.errors.season.message}</p>}
             </div>
 
             <div>

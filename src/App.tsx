@@ -14,7 +14,7 @@ interface PaperDetails {
   subjectCode: string;
   subjectName: string;
   paperNumber: string;
-  session: string;
+  season: string;
   year: string;
 }
 
@@ -271,7 +271,7 @@ export function App() {
                 id="paper-details-description"
                 className="sr-only"
               >
-                Details for {paperDetails.subjectName} ({paperDetails.subjectCode}) paper from {paperDetails.session} 20{paperDetails.year}
+                Details for {paperDetails.subjectName} ({paperDetails.subjectCode}) paper from {paperDetails.season} 20{paperDetails.year}
               </div>
               <div className="bg-muted p-4 rounded-lg mb-4">
                 <div className="grid grid-cols-2 gap-2">
@@ -284,14 +284,14 @@ export function App() {
                   <div className="text-sm font-medium">{paperDetails.paperNumber}</div>
 
                   <div className="text-sm text-muted-foreground">Season:</div>
-                  <div className="text-sm font-medium">{paperDetails.session}</div>
+                  <div className="text-sm font-medium">{paperDetails.season}</div>
 
                   <div className="text-sm text-muted-foreground">Year:</div>
                   <div className="text-sm font-medium">20{paperDetails.year}</div>
 
                   <div className="text-sm text-muted-foreground">Paper Code:</div>
                   <div className="text-sm font-medium">
-                    {paperDetails.subjectCode}/{paperDetails.paperNumber}/{paperDetails.session}/{paperDetails.year}
+                    {paperDetails.subjectCode}/{paperDetails.paperNumber}/{paperDetails.season}/{paperDetails.year}
                   </div>
                 </div>
               </div>

@@ -102,7 +102,7 @@ export const SUBJECTS = [
   },
 ] as const;
 
-export const SESSIONS = [
+export const seasonS = [
   {
     id: "m",
     label: "F/M",
@@ -133,5 +133,5 @@ export const PAPER_TYPES = [
 
 export type Curriculum = (typeof CURRICULUMS)[number]["id"];
 export type Subject = (typeof SUBJECTS)[number];
-export type Session = (typeof SESSIONS)[number]["id"];
+export type season = (typeof seasonS)[number]["id"];
 export type PaperType = (typeof PAPER_TYPES)[number]["id"];
