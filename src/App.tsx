@@ -297,19 +297,20 @@ export function App() {
               </div>
 
               <div className="flex items-center justify-center gap-2 flex-wrap">
-                <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
-                  onClick={() => openInNewTab(paperDetails.link)}
-                >
-                  Open Question Paper
-                  <ExternalLink size={18} />
-                </Button>
 
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
                   onClick={() => openInNewTab(getMarkingSchemeLink(paperDetails.link))}
                 >
                   Open Marking Scheme
+                  <ExternalLink size={18} />
+                </Button>
+
+                <Button
+                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
+                  onClick={() => openInNewTab(paperDetails.link)}
+                >
+                  Open Question Paper
                   <ExternalLink size={18} />
                 </Button>
 
