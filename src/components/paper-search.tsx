@@ -449,11 +449,11 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
 
     const regex = /^(\d{4})\/(\d{2})\/(F\/M|M\/J|O\/N)\/(\d{2})$/;
     if (!regex.test(code)) {
-      return "Invalid format. Please use format [Subject Code]/[Paper Number]/[Season]/[Year]";
+      return "Invalid format. Correct: [Subject Code]/[Paper Number]/[Season]/[Year]";
     }
 
     const match = code.match(regex);
-    if (!match) return "Invalid format";
+    if (!match) return "Invalid format. Correct: [Subject Code]/[Paper Number]/[Season]/[Year]";
 
     const subjectCode = match[1];
     const subject = SUBJECTS.find((s) => s.code === subjectCode);
@@ -896,7 +896,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
       const match = quickCode.match(regex);
 
       if (!match) {
-        setQuickCodeError("Invalid format. Please use format like: 9702/42/M/J/20");
+        setQuickCodeError("Invalid format. Correct: [Subject Code]/[Paper Number]/[Season]/[Year]");
         return;
       }
 
