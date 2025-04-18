@@ -874,7 +874,10 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(({
         {quickCodeError ? (
           <p className="text-xs text-red-500">{quickCodeError}</p>
         ) : (
+         <>
           <p className="text-xs text-muted-foreground">Enter code in format: [Subject Code]/[Paper Number]/[Season]/[Year]</p>
+          <p className="text-xs text-muted-foreground"><span className="font-bold">Tip:</span> Press enter twice to access marking scheme!</p></>
+
         )}
       </div>
 
