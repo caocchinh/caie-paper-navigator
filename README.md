@@ -1,6 +1,11 @@
-# CAIE Paper Navigator - Firefox Extension
+# CAIE Paper Navigator - Browser Extension
 
-A Firefox extension for conveniently searching CAIE IGCSE/A-Level past papers.
+A browser extension for conveniently searching CAIE IGCSE/A-Level past papers.
+
+## Install
+
+- [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/caie-paper-navigator/)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/caie-paper-navigator/fbeddcmganoeefjijeddmlldchaidgbf)
 
 ## Source Code Submission Requirements
 
