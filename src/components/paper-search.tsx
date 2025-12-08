@@ -63,9 +63,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       year: "",
     });
     const [errors, setErrors] = useState<FormErrors>({});
-    const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
-      {}
-    );
 
     // Quick search state
     const [quickCode, setQuickCode] = useState("");
@@ -82,11 +79,15 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
     const isInitializedRef = useRef(false);
 
     // Expose focus method to parent
-    useImperativeHandle(ref, () => ({
-      focusQuickSearch: () => {
-        quickSearchInputRef.current?.focus();
-      },
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        focusQuickSearch: () => {
+          quickSearchInputRef.current?.focus();
+        },
+      }),
+      []
+    );
 
     // Filter subjects based on selected curriculum
     const filteredSubjects = useMemo(
@@ -155,7 +156,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
           saveFormValues(newValues);
           return newValues;
         });
-        setTouchedFields((prev) => ({ ...prev, [field]: true }));
       },
       []
     );
@@ -167,7 +167,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         saveFormValues(newValues);
         return newValues;
       });
-      setTouchedFields((prev) => ({ ...prev, curriculum: true }));
     }, []);
 
     // Handle subject change
@@ -318,20 +317,20 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
     // Memoized paper type error
     const paperTypeError = useMemo(
-      () => (touchedFields.paperType ? errors.paperType : undefined),
-      [touchedFields.paperType, errors.paperType]
+      () => errors.paperType,
+      [errors.paperType]
     );
 
     // Memoized variant error
     const variantError = useMemo(
-      () => (touchedFields.variant ? errors.variant : undefined),
-      [touchedFields.variant, errors.variant]
+      () => errors.variant,
+      [errors.variant]
     );
 
     // Memoized year error
     const yearError = useMemo(
-      () => (touchedFields.year ? errors.year : undefined),
-      [touchedFields.year, errors.year]
+      () => errors.year,
+      [errors.year]
     );
 
     // Handle quick code change
@@ -393,14 +392,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         generateUrl(newFormValues, true, true);
       }
 
-      setTouchedFields({
-        curriculum: true,
-        subject: true,
-        paperType: true,
-        variant: true,
-        season: true,
-        year: true,
-      });
     }, [quickCode, formValues.curriculum, generateUrl]);
 
     // Handle form submission
@@ -431,7 +422,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         setFullYear("");
         setQuickCodeError("");
         setErrors({});
-        setTouchedFields({});
         clearAllValues();
         setIsClearData(false);
         quickSearchUsedRef.current = false;

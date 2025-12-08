@@ -1,6 +1,20 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
+
+// Open a URL in a new browser tab
+export const openInNewTab = (url: string): void => {
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.click();
+};
+
+// Convert question paper link to marking scheme link
+export const getMarkingSchemeLink = (qpLink: string): string => {
+  return qpLink.replace("_qp_", "_ms_");
+};

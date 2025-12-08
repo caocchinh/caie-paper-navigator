@@ -119,3 +119,73 @@ export const clearAllValues = (): void => {
     console.error("Error clearing values:", error);
   }
 };
+
+// Preference keys type
+export type PreferenceKey = "hidePinRecommendation" | "showDialogOnLoad";
+
+// Save a single preference
+export const savePreference = (key: PreferenceKey, value: boolean): void => {
+  try {
+    if (isChromeStorageAvailable()) {
+      chrome.storage.local.set({ [key]: value });
+    } else {
+      localStorage.setItem(key, value.toString());
+    }
+  } catch (error) {
+    console.error(`Error saving preference ${key}:`, error);
+  }
+};
+
+// Preferences interface
+export interface AppPreferences {
+  hidePinRecommendation: boolean;
+  showDialogOnLoad: boolean;
+  formValues: FormValues | null;
+}
+
+// Load all app preferences
+export const loadPreferences = (): Promise<AppPreferences> => {
+  const defaultPreferences: AppPreferences = {
+    hidePinRecommendation: false,
+    showDialogOnLoad: true,
+    formValues: null,
+  };
+
+  return new Promise((resolve) => {
+    try {
+      if (isChromeStorageAvailable()) {
+        chrome.storage.local.get(
+          ["hidePinRecommendation", "showDialogOnLoad", "formValues"],
+          (result) => {
+            resolve({
+              hidePinRecommendation: result.hidePinRecommendation === true,
+              showDialogOnLoad:
+                typeof result.showDialogOnLoad === "boolean"
+                  ? result.showDialogOnLoad
+                  : true,
+              formValues: (result.formValues as FormValues) || null,
+            });
+          }
+        );
+      } else {
+        const hidePinRecommendation =
+          localStorage.getItem("hidePinRecommendation") === "true";
+        const showDialogOnLoad =
+          localStorage.getItem("showDialogOnLoad") !== "false";
+        const formValuesStr = localStorage.getItem("formValues");
+        const formValues = formValuesStr
+          ? (JSON.parse(formValuesStr) as FormValues)
+          : null;
+
+        resolve({
+          hidePinRecommendation,
+          showDialogOnLoad,
+          formValues,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading preferences:", error);
+      resolve(defaultPreferences);
+    }
+  });
+};

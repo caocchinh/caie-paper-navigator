@@ -41,3 +41,8 @@ export interface PaperSearchProps {
   preferencesLoaded?: boolean;
   showDialogOnLoad?: boolean;
 }
+
+// Extended PaperDetails with link for App.tsx usage
+export interface PaperDetailsWithLink extends PaperDetails {
+  link: string;
+}

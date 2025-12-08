@@ -12,19 +12,17 @@ import {
 import { ModeToggle } from "@/components/mode-toggle";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-
-// Paper details interface
-interface PaperDetails {
-  link: string;
-  subjectCode: string;
-  subjectName: string;
-  paperNumber: string;
-  season: string;
-  year: string;
-}
+import {
+  PaperDetails,
+  PaperDetailsWithLink,
+} from "@/components/paper-search/types";
+import { loadPreferences, savePreference } from "@/lib/storage";
+import { openInNewTab, getMarkingSchemeLink } from "@/lib/utils";
 
 export function App() {
-  const [paperDetails, setPaperDetails] = useState<PaperDetails | null>(null);
+  const [paperDetails, setPaperDetails] = useState<PaperDetailsWithLink | null>(
+    null
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isClearData, setIsClearData] = useState(false);
   const [showPinRecommendation, setShowPinRecommendation] = useState(true);
@@ -35,163 +33,42 @@ export function App() {
 
   // Load settings from storage on component mount
   useEffect(() => {
-    // Function to load settings from either Chrome storage or localStorage
-    interface FormValues {
-      year: string;
-      season: string;
-      paperType: string;
-      variant: string;
-      curriculum: string;
-      subject: string;
-    }
-    const loadSettings = () => {
-      if (
-        typeof chrome !== "undefined" &&
-        chrome.storage &&
-        chrome.storage.local
-      ) {
-        try {
-          chrome.storage.local.get(
-            ["hidePinRecommendation", "showDialogOnLoad", "formValues"],
-            (result) => {
-              // Pin recommendation
-              const isHidden = result.hidePinRecommendation === true;
-              setShowPinRecommendation(!isHidden);
+    const initPreferences = async () => {
+      const preferences = await loadPreferences();
 
-              // Dialog on load - default to true if not set
-              const dialogOnLoad =
-                typeof result.showDialogOnLoad === "boolean"
-                  ? result.showDialogOnLoad
-                  : true;
+      setShowPinRecommendation(!preferences.hidePinRecommendation);
 
-              // Then set the actual value after a small delay
-              const formValues: FormValues = result.formValues as FormValues;
-              const currentYear = new Date().getFullYear();
-              const yearNum = parseInt(`20${formValues.year}`);
-              if (yearNum > currentYear || yearNum < 2009) {
-                setShowDialogOnLoad(false);
-              } else {
-                setShowDialogOnLoad(dialogOnLoad);
-              }
-              setPreferencesLoaded(true);
-            }
-          );
-        } catch (error) {
-          console.error("Error loading from Chrome storage:", error);
-          // Fall back to localStorage
-          loadFromLocalStorage();
-        }
-      } else {
-        // Fall back to localStorage
-        loadFromLocalStorage();
-      }
-    };
-
-    // Function to load settings from localStorage
-    const loadFromLocalStorage = () => {
-      try {
-        // Pin recommendation
-        const hidePinRecommendation = localStorage.getItem(
-          "hidePinRecommendation"
-        );
-        if (hidePinRecommendation === "true") {
-          setShowPinRecommendation(false);
-        }
-
-        // Dialog on load - default to true if not explicitly set to false
-        const dialogOnLoad = localStorage.getItem("showDialogOnLoad");
-        // Parse value - default to true unless explicitly set to 'false'
-        const parsedValue = dialogOnLoad !== "false";
-
-        const formValues: FormValues = JSON.parse(
-          localStorage.getItem("formValues") || "{}"
-        );
-
-        const currentYear = new Date().getFullYear();
-        const yearNum = parseInt(`20${formValues.year}`);
-
+      // Validate year from form values
+      const currentYear = new Date().getFullYear();
+      const formYear = preferences.formValues?.year;
+      if (formYear) {
+        const yearNum = parseInt(`20${formYear}`);
         if (yearNum > currentYear || yearNum < 2009) {
           setShowDialogOnLoad(false);
         } else {
-          setShowDialogOnLoad(parsedValue);
+          setShowDialogOnLoad(preferences.showDialogOnLoad);
         }
-        setPreferencesLoaded(true);
-      } catch (error) {
-        console.error("Error accessing localStorage:", error);
-        // Even on error, mark as loaded to not block the app
-        setPreferencesLoaded(true);
-
-        // Default to true when there's an error
-        setShowDialogOnLoad(false);
+      } else {
+        setShowDialogOnLoad(preferences.showDialogOnLoad);
       }
+
+      setPreferencesLoaded(true);
     };
 
-    loadSettings();
+    initPreferences();
   }, []);
 
   // Handle closing the pin recommendation
-  const handleClosePinRecommendation = () => {
+  const handleClosePinRecommendation = useCallback(() => {
     setShowPinRecommendation(false);
-
-    // Save to Chrome storage if available
-    if (
-      typeof chrome !== "undefined" &&
-      chrome.storage &&
-      chrome.storage.local
-    ) {
-      try {
-        chrome.storage.local.set({ hidePinRecommendation: true }, () => {});
-      } catch (error) {
-        console.error("Error saving to Chrome storage:", error);
-        // Fall back to localStorage
-        saveToLocalStorage();
-      }
-    } else {
-      // Fall back to localStorage
-      saveToLocalStorage();
-    }
-
-    // Helper function to save to localStorage
-    function saveToLocalStorage() {
-      try {
-        localStorage.setItem("hidePinRecommendation", "true");
-      } catch (error) {
-        console.error("Error saving to localStorage:", error);
-      }
-    }
-  };
+    savePreference("hidePinRecommendation", true);
+  }, []);
 
   // Handle dialog preference change
-  const handleDialogPreferenceChange = (checked: boolean) => {
+  const handleDialogPreferenceChange = useCallback((checked: boolean) => {
     setShowDialogOnLoad(checked);
-
-    // Save to Chrome storage if available
-    if (
-      typeof chrome !== "undefined" &&
-      chrome.storage &&
-      chrome.storage.local
-    ) {
-      try {
-        chrome.storage.local.set({ showDialogOnLoad: checked }, () => {});
-      } catch (error) {
-        console.error("Error saving to Chrome storage:", error);
-        // Fall back to localStorage
-        saveToLocalStorage();
-      }
-    } else {
-      // Fall back to localStorage
-      saveToLocalStorage();
-    }
-
-    // Helper function to save to localStorage
-    function saveToLocalStorage() {
-      try {
-        localStorage.setItem("showDialogOnLoad", checked.toString());
-      } catch (error) {
-        console.error("Error saving to localStorage:", error);
-      }
-    }
-  };
+    savePreference("showDialogOnLoad", checked);
+  }, []);
 
   // Handle paper details generation
   const handlePaperGenerated = useCallback(
@@ -232,35 +109,31 @@ export function App() {
     [dialogOpen, showDialogOnLoad]
   );
 
-  // Function to open link in new tab
-  const openInNewTab = (url: string) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.click();
-  };
-
-  // Function to get marking scheme link from question paper link
-  const getMarkingSchemeLink = (qpLink: string) => {
-    return qpLink.replace("_qp_", "_ms_");
-  };
-
   // Modify the Dialog component to use a better onOpenChange handler
-  const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open);
+  const handleDialogOpenChange = useCallback(
+    (open: boolean) => {
+      setDialogOpen(open);
 
-    // Only focus on quick search input when dialog closes AND quick search was used
-    if (!open && paperSearchRef.current && quickSearchUsed.current) {
-      // Use a small timeout to ensure DOM update completes
-      paperSearchRef.current?.focusQuickSearch();
-    }
-  };
+      // Only focus on quick search input when dialog closes AND quick search was used
+      if (!open && paperSearchRef.current && quickSearchUsed.current) {
+        paperSearchRef.current?.focusQuickSearch();
+      }
+    },
+    [paperSearchRef]
+  );
+
+  // Handle clear data action
+  const handleClearData = useCallback(() => {
+    setPaperDetails(null);
+    setIsClearData(true);
+    handleDialogOpenChange(false);
+    quickSearchUsed.current = false;
+  }, [handleDialogOpenChange]);
 
   return (
     <div className="min-h-screen flex flex-col justify-between w-full items-center bg-white dark:bg-primary-foreground">
       {showPinRecommendation && (
-        <div className="bg-blue-50 py-3 px-5 flex items-center justify-between w-full sticky top-0 z-[10000]">
+        <div className="bg-blue-50 py-3 px-5 flex items-center justify-between w-full sticky top-0 z-10000">
           <p className="text-sm text-blue-700">
             📌 Pin this extension for better user experience and quick access
           </p>
@@ -274,9 +147,9 @@ export function App() {
         </div>
       )}
 
-      <Card className="mx-auto border-none shadow-none !pb-8 w-full">
-        <CardContent className="!p-0">
-          <h2 className="text-xl font-semibold mb-6 text-center bg-gradient-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
+      <Card className="mx-auto border-none shadow-none pb-8! w-full">
+        <CardContent className="p-0!">
+          <h2 className="text-xl font-semibold mb-6 text-center bg-linear-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
             <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level
             Past Papers Search
           </h2>
@@ -300,7 +173,7 @@ export function App() {
           aria-describedby="paper-details-description"
         >
           <DialogHeader>
-            <DialogTitle className="!text-center">Paper Details</DialogTitle>
+            <DialogTitle className="text-center!">Paper Details</DialogTitle>
           </DialogHeader>
 
           {paperDetails && (
@@ -374,12 +247,7 @@ export function App() {
                 </Button>
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => {
-                    setPaperDetails(null);
-                    setIsClearData(true);
-                    handleDialogOpenChange(false);
-                    quickSearchUsed.current = false;
-                  }}
+                  onClick={handleClearData}
                 >
                   Clear Data
                   <Trash size={18} />
@@ -417,7 +285,7 @@ export function App() {
             target="_blank"
             rel="noopener noreferrer"
             title="Visit our website"
-            className="text-sm font-medium flex items-center gap-1"
+            className="text-[10px] font-medium flex items-center gap-1"
           >
             Powered by bestexamhelp.com. Build and maintain by Noteoverflow
             founder
