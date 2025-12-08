@@ -114,7 +114,12 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
     // Generate URL and call onLinkGenerated
     const generateUrl = useCallback(
-      (values: FormValues, showDialog: boolean, isQuickSearch: boolean) => {
+      (
+        values: FormValues,
+        showDialog: boolean,
+        isQuickSearch: boolean,
+        updateQuickSearch: boolean
+      ) => {
         const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
         if (!selectedSubject) return;
 
@@ -141,9 +146,11 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         onLinkGenerated(url, details, showDialog, isQuickSearch);
 
         // Update quick code
-        const newQuickCode = generateQuickCode(values);
-        setQuickCode(newQuickCode);
-        setQuickCodeError("");
+        if (updateQuickSearch) {
+          const newQuickCode = generateQuickCode(values);
+          setQuickCode(newQuickCode);
+          setQuickCodeError("");
+        }
       },
       [paperType, onLinkGenerated, generateQuickCode]
     );
@@ -316,22 +323,13 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
     );
 
     // Memoized paper type error
-    const paperTypeError = useMemo(
-      () => errors.paperType,
-      [errors.paperType]
-    );
+    const paperTypeError = useMemo(() => errors.paperType, [errors.paperType]);
 
     // Memoized variant error
-    const variantError = useMemo(
-      () => errors.variant,
-      [errors.variant]
-    );
+    const variantError = useMemo(() => errors.variant, [errors.variant]);
 
     // Memoized year error
-    const yearError = useMemo(
-      () => errors.year,
-      [errors.year]
-    );
+    const yearError = useMemo(() => errors.year, [errors.year]);
 
     // Handle quick code change
     const handleQuickCodeChange = useCallback((value: string) => {
@@ -389,9 +387,8 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         setFormValues(newFormValues);
         saveFormValues(newFormValues);
         setFullYear(`20${parsed.year}`);
-        generateUrl(newFormValues, true, true);
+        generateUrl(newFormValues, true, true, true);
       }
-
     }, [quickCode, formValues.curriculum, generateUrl]);
 
     // Handle form submission
@@ -402,7 +399,7 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
         quickSearchUsedRef.current = false;
         saveFormValues(formValues);
-        generateUrl(formValues, true, false);
+        generateUrl(formValues, true, false, true);
       },
       [formValues, isFormValid, generateUrl]
     );
@@ -431,6 +428,7 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
     // Handle pending subject after curriculum change
     useEffect(() => {
+      if (!isInitializedRef.current) return;
       if (pendingSubjectRef.current) {
         const pendingSubject = pendingSubjectRef.current;
         const subjectExists = SUBJECTS.some(
@@ -455,7 +453,7 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
               setFormValues(newFormValues);
               saveFormValues(newFormValues);
               setFullYear(`20${parsed.year}`);
-              generateUrl(newFormValues, true, true);
+              generateUrl(newFormValues, true, true, true);
             }
           }
           pendingSubjectRef.current = null;
@@ -471,8 +469,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         !hasGeneratedInitialUrl.current &&
         !hasMountedRef.current
       ) {
-        hasMountedRef.current = true;
-
         // Load quick search values
         loadQuickSearchValues().then((savedQuickCode) => {
           if (savedQuickCode) {
@@ -493,7 +489,9 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
                   : savedValues.year
               );
             }
-            isInitializedRef.current = true;
+            setTimeout(() => {
+              isInitializedRef.current = true;
+            }, 0);
 
             // Generate URL if all values are present
             if (
@@ -504,7 +502,12 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
               savedValues.year
             ) {
               setTimeout(() => {
-                generateUrl(savedValues, showDialogOnLoad ?? false, false);
+                generateUrl(
+                  savedValues,
+                  showDialogOnLoad ?? false,
+                  false,
+                  false
+                );
               }, 0);
             }
           }

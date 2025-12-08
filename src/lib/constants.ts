@@ -100,6 +100,24 @@ export const SUBJECTS = [
     label: "Business Studies",
     curriculum: "cambridge-igcse",
   },
+  {
+    id: "sociology-9699",
+    code: "9699",
+    label: "Sociology",
+    curriculum: "cambridge-international-a-level",
+  },
+  {
+    id: "sociology-9698",
+    code: "9698",
+    label: "Sociology (legacy)",
+    curriculum: "cambridge-international-a-level",
+  },
+  {
+    id: "media-studies-9607",
+    code: "9607",
+    label: "Media Studies",
+    curriculum: "cambridge-international-a-level",
+  },
 ] as const;
 
 export const seasonS = [
