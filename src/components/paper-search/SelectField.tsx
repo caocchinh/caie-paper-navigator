@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useCallback, useMemo } from "react";
 
 interface BaseOption {
   id: string;
@@ -28,9 +28,26 @@ function SelectFieldInner<T extends BaseOption>({
   error,
   renderOption,
 }: SelectFieldProps<T>) {
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange(e.target.value);
-  };
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      onChange(e.target.value);
+    },
+    [onChange]
+  );
+
+  const renderedOptions = useMemo(
+    () =>
+      options.map((option) => (
+        <option
+          key={option.id}
+          value={option.id}
+          className="dark:bg-[#323339] dark:text-white"
+        >
+          {renderOption ? renderOption(option) : option.label}
+        </option>
+      )),
+    [options, renderOption]
+  );
 
   return (
     <div>
@@ -46,15 +63,7 @@ function SelectFieldInner<T extends BaseOption>({
         <option value="" hidden className="dark:bg-[#323339] dark:text-white">
           {placeholder}
         </option>
-        {options.map((option) => (
-          <option
-            key={option.id}
-            value={option.id}
-            className="dark:bg-[#323339] dark:text-white"
-          >
-            {renderOption ? renderOption(option) : option.label}
-          </option>
-        ))}
+        {renderedOptions}
       </select>
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>

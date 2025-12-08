@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-dialog": "^1.1.7",
     "@radix-ui/react-label": "^2.1.3",
     "@radix-ui/react-slot": "^1.2.0",
@@ -25,8 +24,7 @@
     "react-hook-form": "^7.55.0",
     "tailwind-merge": "^3.2.0",
     "tailwindcss": "^4.1.17",
-    "tw-animate-css": "^1.2.5",
-    "zod": "^3.24.2"
+    "tw-animate-css": "^1.2.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, forwardRef } from "react";
+import React, { memo, forwardRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,18 +17,27 @@ interface QuickSearchSectionProps {
 export const QuickSearchSection = memo(
   forwardRef<HTMLInputElement, QuickSearchSectionProps>(
     ({ quickCode, onQuickCodeChange, onSubmit, error }, ref) => {
-      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          onSubmit();
-        }
-      };
+      const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSubmit();
+          }
+        },
+        [onSubmit]
+      );
 
-      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onQuickCodeChange(e.target.value.toUpperCase());
-      };
+      const handleChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+          onQuickCodeChange(e.target.value.toUpperCase());
+        },
+        [onQuickCodeChange]
+      );
 
-      const isDisabled = !!error || quickCode === "";
+      const isDisabled = useMemo(
+        () => !!error || quickCode === "",
+        [error, quickCode]
+      );
 
       return (
         <div className="space-y-3 mb-5 h-full border-2 p-5 rounded-sm relative">

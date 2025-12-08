@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { Plus, Minus } from "lucide-react";
 
 interface NumberInputWithButtonsProps {
@@ -27,9 +27,12 @@ export const NumberInputWithButtons = memo(
     placeholder,
     showError = true,
   }: NumberInputWithButtonsProps) => {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(e.target.value);
-    };
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(e.target.value);
+      },
+      [onChange]
+    );
 
     return (
       <div>
@@ -46,7 +49,7 @@ export const NumberInputWithButtons = memo(
           </button>
           <input
             id={id}
-            className="mx-2 text-center flex-grow h-10 border rounded-md w-full"
+            className="mx-2 text-center grow h-10 border rounded-md w-full"
             type="text"
             placeholder={placeholder}
             value={value}

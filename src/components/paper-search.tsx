@@ -8,6 +8,7 @@ import {
   forwardRef,
   useImperativeHandle,
   useMemo,
+  memo,
 } from "react";
 import { CURRICULUMS, seasonS, SUBJECTS } from "@/lib/constants";
 import { Label } from "@/components/ui/label";
@@ -40,7 +41,7 @@ import { QuickSearchSection } from "./paper-search/QuickSearchSection";
 // Re-export types for backward compatibility
 export type { PaperSearchHandles } from "@/components/paper-search/types";
 
-export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
+const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
   (
     {
       paperType,
@@ -293,6 +294,46 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
       );
     }, [formValues, errors]);
 
+    // Memoized renderOption callbacks
+    const renderSubjectOption = useCallback(
+      (option: { label: string; code: string }) =>
+        `${option.label} (${option.code})`,
+      []
+    );
+
+    const renderSeasonOption = useCallback(
+      (option: { label: string; fullName: string }) =>
+        `${option.label} - ${option.fullName}`,
+      []
+    );
+
+    // Memoized submit button class name
+    const submitButtonClassName = useMemo(
+      () =>
+        `w-full p-2 text-white rounded-md cursor-pointer bg-primary dark:bg-white dark:text-black ${
+          !isFormValid ? "opacity-50 pointer-events-none" : ""
+        }`,
+      [isFormValid]
+    );
+
+    // Memoized paper type error
+    const paperTypeError = useMemo(
+      () => (touchedFields.paperType ? errors.paperType : undefined),
+      [touchedFields.paperType, errors.paperType]
+    );
+
+    // Memoized variant error
+    const variantError = useMemo(
+      () => (touchedFields.variant ? errors.variant : undefined),
+      [touchedFields.variant, errors.variant]
+    );
+
+    // Memoized year error
+    const yearError = useMemo(
+      () => (touchedFields.year ? errors.year : undefined),
+      [touchedFields.year, errors.year]
+    );
+
     // Handle quick code change
     const handleQuickCodeChange = useCallback((value: string) => {
       setQuickCode(value);
@@ -519,7 +560,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
             onChange={handleSubjectChange}
             options={filteredSubjects}
             placeholder="Select subject"
-            renderOption={(option) => `${option.label} (${option.code})`}
+            renderOption={renderSubjectOption}
           />
 
           <div className="grid grid-cols-1 gap-4 w-full">
@@ -534,7 +575,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
                   onIncrement={incrementPaperType}
                   onDecrement={decrementPaperType}
                   placeholder="e.g. 4"
-                  error={touchedFields.paperType ? errors.paperType : undefined}
+                  error={paperTypeError}
                 />
               </div>
 
@@ -548,7 +589,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
                   onIncrement={incrementVariant}
                   onDecrement={decrementVariant}
                   placeholder="e.g. 2"
-                  error={touchedFields.variant ? errors.variant : undefined}
+                  error={variantError}
                 />
               </div>
             </div>
@@ -561,7 +602,7 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
               onChange={handleSeasonChange}
               options={seasonS}
               placeholder="Select season"
-              renderOption={(option) => `${option.label} - ${option.fullName}`}
+              renderOption={renderSeasonOption}
             />
 
             {/* Year */}
@@ -573,16 +614,14 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
               onIncrement={incrementYear}
               onDecrement={decrementYear}
               placeholder="e.g. 2020"
-              error={touchedFields.year ? errors.year : undefined}
+              error={yearError}
             />
           </div>
 
           <div className="mt-4">
             <button
               type="submit"
-              className={`w-full p-2 text-white rounded-md cursor-pointer bg-primary dark:bg-white dark:text-black ${
-                !isFormValid && "opacity-50 pointer-events-none"
-              }`}
+              className={submitButtonClassName}
               disabled={!isFormValid}
             >
               {!isFormValid ? "Please fill all fields" : "Find Paper"}
@@ -592,17 +631,37 @@ export const PaperSearch = forwardRef<PaperSearchHandles, PaperSearchProps>(
         </form>
 
         {/* Clear All Button */}
-        <button
-          type="button"
-          className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer flex items-center justify-center"
-          onClick={() => setIsClearData(true)}
-        >
-          Clear All
-          <XCircle className="w-4 h-4 ml-2" />
-        </button>
+        <ClearButton onClick={setIsClearData} />
       </div>
     );
   }
 );
 
-PaperSearch.displayName = "PaperSearch";
+PaperSearchInner.displayName = "PaperSearch";
+
+// Memoized ClearButton component
+const ClearButton = memo(function ClearButton({
+  onClick,
+}: {
+  onClick: (value: boolean) => void;
+}) {
+  const handleClick = useCallback(() => {
+    onClick(true);
+  }, [onClick]);
+
+  return (
+    <button
+      type="button"
+      className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer flex items-center justify-center"
+      onClick={handleClick}
+    >
+      Clear All
+      <XCircle className="w-4 h-4 ml-2" />
+    </button>
+  );
+});
+
+ClearButton.displayName = "ClearButton";
+
+// Export memoized PaperSearch component
+export const PaperSearch = memo(PaperSearchInner);
