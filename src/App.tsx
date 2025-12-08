@@ -413,17 +413,22 @@ export function App() {
       <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-primary-foreground  p-4 w-full">
         <div className="flex items-center justify-center gap-2 w-full">
           <a
-            href="https://www.instagram.com/vectr.vcp/"
+            href="https://noteoverflow.com"
             target="_blank"
             rel="noopener noreferrer"
-            title="Visit our Instagram"
+            title="Visit our website"
             className="text-sm font-medium flex items-center gap-1"
           >
-            Powered by bestexamhelp.com. Build and maintain by VECTR
-            <img src="/vectr.png" alt="VECTR" className="w-5 h-5" />
+            Powered by bestexamhelp.com. Build and maintain by Noteoverflow
+            founder
+            <img
+              src="/noteoverflow.png"
+              alt="Noteoverflow"
+              className="w-5 h-5"
+            />
           </a>
           <a
-            href="https://github.com/ChinCao"
+            href="https://github.com/caocchinh"
             target="_blank"
             rel="noopener noreferrer"
             title="Developer's GitHub"

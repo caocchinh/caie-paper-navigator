@@ -8,7 +8,7 @@
     "default_popup": "index.html"
   },
   "icons": {
-    "64": "vectr.png"
+    "64": "noteoverflow.png"
   },
   "browser_specific_settings": {
     "gecko": {

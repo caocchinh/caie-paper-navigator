@@ -5,6 +5,7 @@ A Firefox extension for conveniently searching CAIE IGCSE/A-Level past papers.
 ## Source Code Submission Requirements
 
 ### Required Software
+
 - Node.js (version 18.0.0 or higher)
 - npm (version 8.0.0 or higher)
 
@@ -21,7 +22,6 @@ A Firefox extension for conveniently searching CAIE IGCSE/A-Level past papers.
    - Open index.html and type in <link rel="stylesheet" href="/popup.css"> inside the <head> tag
 7. Create a ZIP file containing all files in the `dist` directory
 
-
 ## Source Code Structure
 
 - `src/` - Main source code directory
@@ -34,7 +34,7 @@ A Firefox extension for conveniently searching CAIE IGCSE/A-Level past papers.
 - Root files:
   - `manifest.json` - Extension manifest file
   - `popup.css` - Popup styling
-  - `vectr.png` - Extension icon
+  - `noteoverflow.png` - Extension icon
   - `index.html` - Main HTML file (imports popup.css)
 
 ## Notes for Reviewers
