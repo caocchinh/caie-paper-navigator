@@ -1,9 +1,14 @@
-import {useState, useEffect, useCallback, useRef} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {PaperSearch, PaperSearchHandles} from "@/components/paper-search";
-import {ExternalLink, Github, Trash, X} from "lucide-react";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PaperSearch, PaperSearchHandles } from "@/components/paper-search";
+import { ExternalLink, Github, Trash, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -23,7 +28,7 @@ export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isClearData, setIsClearData] = useState(false);
   const [showPinRecommendation, setShowPinRecommendation] = useState(true);
-  const [showDialogOnLoad, setShowDialogOnLoad] = useState(false); 
+  const [showDialogOnLoad, setShowDialogOnLoad] = useState(false);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const paperSearchRef = useRef<PaperSearchHandles>(null);
   const quickSearchUsed = useRef(false);
@@ -40,19 +45,27 @@ export function App() {
       subject: string;
     }
     const loadSettings = () => {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
         try {
-          chrome.storage.local.get(['hidePinRecommendation', 'showDialogOnLoad',"formValues"], (result) => {
-            // Pin recommendation
-            const isHidden = result.hidePinRecommendation === true;
-            setShowPinRecommendation(!isHidden);
-            
-            // Dialog on load - default to true if not set
-            const dialogOnLoad = typeof result.showDialogOnLoad === 'boolean' ? result.showDialogOnLoad : true;
-            
-            
-            // Then set the actual value after a small delay
-              const formValues : FormValues = result.formValues as FormValues;
+          chrome.storage.local.get(
+            ["hidePinRecommendation", "showDialogOnLoad", "formValues"],
+            (result) => {
+              // Pin recommendation
+              const isHidden = result.hidePinRecommendation === true;
+              setShowPinRecommendation(!isHidden);
+
+              // Dialog on load - default to true if not set
+              const dialogOnLoad =
+                typeof result.showDialogOnLoad === "boolean"
+                  ? result.showDialogOnLoad
+                  : true;
+
+              // Then set the actual value after a small delay
+              const formValues: FormValues = result.formValues as FormValues;
               const currentYear = new Date().getFullYear();
               const yearNum = parseInt(`20${formValues.year}`);
               if (yearNum > currentYear || yearNum < 2009) {
@@ -60,9 +73,9 @@ export function App() {
               } else {
                 setShowDialogOnLoad(dialogOnLoad);
               }
-          setPreferencesLoaded(true);
-
-        });
+              setPreferencesLoaded(true);
+            }
+          );
         } catch (error) {
           console.error("Error loading from Chrome storage:", error);
           // Fall back to localStorage
@@ -73,24 +86,28 @@ export function App() {
         loadFromLocalStorage();
       }
     };
-    
+
     // Function to load settings from localStorage
     const loadFromLocalStorage = () => {
       try {
         // Pin recommendation
-        const hidePinRecommendation = localStorage.getItem('hidePinRecommendation');
-        if (hidePinRecommendation === 'true') {
+        const hidePinRecommendation = localStorage.getItem(
+          "hidePinRecommendation"
+        );
+        if (hidePinRecommendation === "true") {
           setShowPinRecommendation(false);
         }
-        
-        // Dialog on load - default to true if not explicitly set to false
-        const dialogOnLoad = localStorage.getItem('showDialogOnLoad');
-        // Parse value - default to true unless explicitly set to 'false'
-        const parsedValue = dialogOnLoad !== 'false';
-        
-        const formValues : FormValues = JSON.parse(localStorage.getItem('formValues') || '{}');
 
-        const currentYear =  new Date().getFullYear();
+        // Dialog on load - default to true if not explicitly set to false
+        const dialogOnLoad = localStorage.getItem("showDialogOnLoad");
+        // Parse value - default to true unless explicitly set to 'false'
+        const parsedValue = dialogOnLoad !== "false";
+
+        const formValues: FormValues = JSON.parse(
+          localStorage.getItem("formValues") || "{}"
+        );
+
+        const currentYear = new Date().getFullYear();
         const yearNum = parseInt(`20${formValues.year}`);
 
         if (yearNum > currentYear || yearNum < 2009) {
@@ -98,29 +115,32 @@ export function App() {
         } else {
           setShowDialogOnLoad(parsedValue);
         }
-          setPreferencesLoaded(true);
+        setPreferencesLoaded(true);
       } catch (error) {
-        console.error('Error accessing localStorage:', error);
+        console.error("Error accessing localStorage:", error);
         // Even on error, mark as loaded to not block the app
         setPreferencesLoaded(true);
-        
+
         // Default to true when there's an error
         setShowDialogOnLoad(false);
       }
     };
-    
+
     loadSettings();
   }, []);
 
   // Handle closing the pin recommendation
   const handleClosePinRecommendation = () => {
     setShowPinRecommendation(false);
-    
+
     // Save to Chrome storage if available
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    if (
+      typeof chrome !== "undefined" &&
+      chrome.storage &&
+      chrome.storage.local
+    ) {
       try {
-        chrome.storage.local.set({ hidePinRecommendation: true }, () => {
-        });
+        chrome.storage.local.set({ hidePinRecommendation: true }, () => {});
       } catch (error) {
         console.error("Error saving to Chrome storage:", error);
         // Fall back to localStorage
@@ -130,13 +150,13 @@ export function App() {
       // Fall back to localStorage
       saveToLocalStorage();
     }
-    
+
     // Helper function to save to localStorage
     function saveToLocalStorage() {
       try {
-        localStorage.setItem('hidePinRecommendation', 'true');
+        localStorage.setItem("hidePinRecommendation", "true");
       } catch (error) {
-        console.error('Error saving to localStorage:', error);
+        console.error("Error saving to localStorage:", error);
       }
     }
   };
@@ -144,12 +164,15 @@ export function App() {
   // Handle dialog preference change
   const handleDialogPreferenceChange = (checked: boolean) => {
     setShowDialogOnLoad(checked);
-    
+
     // Save to Chrome storage if available
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    if (
+      typeof chrome !== "undefined" &&
+      chrome.storage &&
+      chrome.storage.local
+    ) {
       try {
-        chrome.storage.local.set({ showDialogOnLoad: checked }, () => {
-        });
+        chrome.storage.local.set({ showDialogOnLoad: checked }, () => {});
       } catch (error) {
         console.error("Error saving to Chrome storage:", error);
         // Fall back to localStorage
@@ -159,45 +182,55 @@ export function App() {
       // Fall back to localStorage
       saveToLocalStorage();
     }
-    
+
     // Helper function to save to localStorage
     function saveToLocalStorage() {
       try {
-        localStorage.setItem('showDialogOnLoad', checked.toString());
+        localStorage.setItem("showDialogOnLoad", checked.toString());
       } catch (error) {
-        console.error('Error saving to localStorage:', error);
+        console.error("Error saving to localStorage:", error);
       }
     }
   };
 
   // Handle paper details generation
-  const handlePaperGenerated = useCallback((link: string | null, details?: Omit<PaperDetails, "link">, showDialog?: boolean, isQuickSearch?: boolean) => {
-    if (!link) {
-      setPaperDetails(null);
-      return;
-    }
-
-    // Update quickSearchUsed based on value passed from PaperSearch component
-    quickSearchUsed.current = isQuickSearch || false;
-
-    // Only update paperDetails if needed
-    setPaperDetails(prev => {
-      if (!prev || prev.link !== link) {
-        return {
-          link,
-          ...details!,
-        };
+  const handlePaperGenerated = useCallback(
+    (
+      link: string | null,
+      details?: Omit<PaperDetails, "link">,
+      showDialog?: boolean,
+      isQuickSearch?: boolean
+    ) => {
+      if (!link) {
+        setPaperDetails(null);
+        return;
       }
-      return prev; // Don't update if it's the same
-    });
 
-    // Handle dialog opening with a ref to avoid unnecessary renders
-    const shouldOpenDialog = showDialog === true || (showDialog === undefined && showDialogOnLoad === true);
-    
-    if (shouldOpenDialog && !dialogOpen) {
-      setDialogOpen(true);
-    }
-  }, [dialogOpen, showDialogOnLoad]);
+      // Update quickSearchUsed based on value passed from PaperSearch component
+      quickSearchUsed.current = isQuickSearch || false;
+
+      // Only update paperDetails if needed
+      setPaperDetails((prev) => {
+        if (!prev || prev.link !== link) {
+          return {
+            link,
+            ...details!,
+          };
+        }
+        return prev; // Don't update if it's the same
+      });
+
+      // Handle dialog opening with a ref to avoid unnecessary renders
+      const shouldOpenDialog =
+        showDialog === true ||
+        (showDialog === undefined && showDialogOnLoad === true);
+
+      if (shouldOpenDialog && !dialogOpen) {
+        setDialogOpen(true);
+      }
+    },
+    [dialogOpen, showDialogOnLoad]
+  );
 
   // Function to open link in new tab
   const openInNewTab = (url: string) => {
@@ -216,19 +249,13 @@ export function App() {
   // Modify the Dialog component to use a better onOpenChange handler
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open);
-    
+
     // Only focus on quick search input when dialog closes AND quick search was used
     if (!open && paperSearchRef.current && quickSearchUsed.current) {
       // Use a small timeout to ensure DOM update completes
-        paperSearchRef.current?.focusQuickSearch();
+      paperSearchRef.current?.focusQuickSearch();
     }
   };
-  
-  // Focus on quick search input when app mounts
-  useEffect(() => {
-    // No longer automatically focus on app mount
-    // This will be handled by the handleDialogOpenChange function when needed
-  }, [preferencesLoaded]);
 
   return (
     <div className="min-h-screen flex flex-col justify-between w-full items-center bg-white dark:bg-primary-foreground">
@@ -237,7 +264,7 @@ export function App() {
           <p className="text-sm text-blue-700">
             📌 Pin this extension for better user experience and quick access
           </p>
-          <button 
+          <button
             onClick={handleClosePinRecommendation}
             className="text-blue-700 hover:text-blue-900 cursor-pointer"
             aria-label="Close recommendation"
@@ -250,26 +277,24 @@ export function App() {
       <Card className="mx-auto border-none shadow-none !pb-8 w-full">
         <CardContent className="!p-0">
           <h2 className="text-xl font-semibold mb-6 text-center bg-gradient-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
-            <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level Past Papers Search
+            <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level
+            Past Papers Search
           </h2>
-        <div className="max-w-xl mx-auto px-7">
-        <PaperSearch
-            ref={paperSearchRef}
-            paperType="qp"
-            onLinkGenerated={handlePaperGenerated}
-            isClearData={isClearData}
-            setIsClearData={setIsClearData}
-            preferencesLoaded={preferencesLoaded}
-            showDialogOnLoad={showDialogOnLoad}
-          />
-        </div>
+          <div className="max-w-xl mx-auto px-7">
+            <PaperSearch
+              ref={paperSearchRef}
+              paperType="qp"
+              onLinkGenerated={handlePaperGenerated}
+              isClearData={isClearData}
+              setIsClearData={setIsClearData}
+              preferencesLoaded={preferencesLoaded}
+              showDialogOnLoad={showDialogOnLoad}
+            />
+          </div>
         </CardContent>
       </Card>
 
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={handleDialogOpenChange}
-      >
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent
           className="w-[90%] "
           aria-describedby="paper-details-description"
@@ -280,11 +305,10 @@ export function App() {
 
           {paperDetails && (
             <div className="space-y-6">
-              <div
-                id="paper-details-description"
-                className="sr-only"
-              >
-                Details for {paperDetails.subjectName} ({paperDetails.subjectCode}) paper from {paperDetails.season} 20{paperDetails.year}
+              <div id="paper-details-description" className="sr-only">
+                Details for {paperDetails.subjectName} (
+                {paperDetails.subjectCode}) paper from {paperDetails.season} 20
+                {paperDetails.year}
               </div>
               <div className="bg-muted p-4 rounded-lg mb-4">
                 <div className="grid grid-cols-2 gap-2">
@@ -293,27 +317,39 @@ export function App() {
                     {paperDetails.subjectName} ({paperDetails.subjectCode})
                   </div>
 
-                  <div className="text-sm text-muted-foreground">Paper Number:</div>
-                  <div className="text-sm font-medium">{paperDetails.paperNumber}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Paper Number:
+                  </div>
+                  <div className="text-sm font-medium">
+                    {paperDetails.paperNumber}
+                  </div>
 
                   <div className="text-sm text-muted-foreground">Season:</div>
-                  <div className="text-sm font-medium">{paperDetails.season}</div>
+                  <div className="text-sm font-medium">
+                    {paperDetails.season}
+                  </div>
 
                   <div className="text-sm text-muted-foreground">Year:</div>
-                  <div className="text-sm font-medium">20{paperDetails.year}</div>
-
-                  <div className="text-sm text-muted-foreground">Paper Code:</div>
                   <div className="text-sm font-medium">
-                    {paperDetails.subjectCode}/{paperDetails.paperNumber}/{paperDetails.season}/{paperDetails.year}
+                    20{paperDetails.year}
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    Paper Code:
+                  </div>
+                  <div className="text-sm font-medium">
+                    {paperDetails.subjectCode}/{paperDetails.paperNumber}/
+                    {paperDetails.season}/{paperDetails.year}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-center gap-2 flex-wrap">
-
                 <Button
                   className="flex items-center justify-center gap-2 cursor-pointer w-full"
-                  onClick={() => openInNewTab(getMarkingSchemeLink(paperDetails.link))}
+                  onClick={() =>
+                    openInNewTab(getMarkingSchemeLink(paperDetails.link))
+                  }
                 >
                   Open Marking Scheme
                   <ExternalLink size={18} />
@@ -350,27 +386,25 @@ export function App() {
                 </Button>
               </div>
 
-                  
-                  
-                  <div className="flex items-center justify-between py-4 px-6 bg-muted rounded-lg gap-4">
-                    <div className="space-y-0.5">
-                      <Label 
-                        htmlFor="auto-show-dialog" 
-                        className="text-sm font-medium"
-                      >
-                        Show dialog on startup
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Automatically show this dialog when existing valid paper data is found in manual input
-                      </p>
-                    </div>
-                    <Switch
-                      id="auto-show-dialog"
-                      checked={showDialogOnLoad}
-                      onCheckedChange={handleDialogPreferenceChange}
-                    />
-                  </div>
-                
+              <div className="flex items-center justify-between py-4 px-6 bg-muted rounded-lg gap-4">
+                <div className="space-y-0.5">
+                  <Label
+                    htmlFor="auto-show-dialog"
+                    className="text-sm font-medium"
+                  >
+                    Show dialog on startup
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically show this dialog when existing valid paper
+                    data is found in manual input
+                  </p>
+                </div>
+                <Switch
+                  id="auto-show-dialog"
+                  checked={showDialogOnLoad}
+                  onCheckedChange={handleDialogPreferenceChange}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
@@ -386,11 +420,7 @@ export function App() {
             className="text-sm font-medium flex items-center gap-1"
           >
             Powered by bestexamhelp.com. Build and maintain by VECTR
-            <img
-              src="/vectr.png"
-              alt="VECTR"
-              className="w-5 h-5"
-            />
+            <img src="/vectr.png" alt="VECTR" className="w-5 h-5" />
           </a>
           <a
             href="https://github.com/ChinCao"
@@ -403,7 +433,6 @@ export function App() {
           </a>
         </div>
         <ModeToggle />
-
       </div>
     </div>
   );
