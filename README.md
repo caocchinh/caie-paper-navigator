@@ -3,10 +3,10 @@
 A browser extension for conveniently searching CAIE IGCSE/A-Level past papers.
 
 <p align="center">
-  <img src="public/preview1.webp" />
-  <img src="public/preview2.webp" />
-  <img src="public/preview3.webp" />
-  <img src="public/preview4.webp" />
+  <img src="https://github.com/caocchinh/caie-paper-navigator/blob/main/public/preview1.webp?raw=true" />
+  <img src="https://github.com/caocchinh/caie-paper-navigator/blob/main/public/preview2.webp?raw=true" />
+  <img src="https://github.com/caocchinh/caie-paper-navigator/blob/main/public/preview3.webp?raw=true" />
+  <img src="https://github.com/caocchinh/caie-paper-navigator/blob/main/public/preview4.webp?raw=true" />
 </p>
 
 ## Install
