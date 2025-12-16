@@ -3,10 +3,10 @@
 A browser extension for conveniently searching CAIE IGCSE/A-Level past papers.
 
 <p align="center">
-  <img src="public/preview1.webp" width="200" />
-  <img src="public/preview2.webp" width="200" />
-  <img src="public/preview3.webp" width="200" />
-  <img src="public/preview4.webp" width="200" />
+  <img src="public/preview1.webp" />
+  <img src="public/preview2.webp" />
+  <img src="public/preview3.webp" />
+  <img src="public/preview4.webp" />
 </p>
 
 ## Install
