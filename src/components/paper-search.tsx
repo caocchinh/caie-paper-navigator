@@ -334,20 +334,21 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
     // Handle quick code change
     const handleQuickCodeChange = useCallback((value: string) => {
       setQuickCode(value);
-      const error = validateQuickCode(value);
+      const error = validateQuickCode(value.trim());
       setQuickCodeError(error || "");
       saveQuickSearchValues(value);
     }, []);
 
     // Handle quick code submit
     const handleQuickCodeSubmit = useCallback(() => {
-      const error = validateQuickCode(quickCode);
-      if (error || !quickCode) {
+      const trimmedQuickCode = quickCode.trim();
+      const error = validateQuickCode(trimmedQuickCode);
+      if (error || !trimmedQuickCode) {
         setQuickCodeError(error || "");
         return;
       }
 
-      const parsed = parseQuickCode(quickCode);
+      const parsed = parseQuickCode(trimmedQuickCode);
       if (!parsed) {
         setQuickCodeError(
           "Invalid format. Correct: [Subject Code]/[Paper Number]/[Season]/[Year]"
