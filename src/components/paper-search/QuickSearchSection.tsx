@@ -29,7 +29,16 @@ export const QuickSearchSection = memo(
 
       const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-          onQuickCodeChange(e.target.value.toUpperCase());
+          const input = e.target;
+          const cursorPosition = input.selectionStart;
+          const newValue = input.value.toUpperCase();
+
+          onQuickCodeChange(newValue);
+
+          // Restore cursor position after React re-renders
+          requestAnimationFrame(() => {
+            input.setSelectionRange(cursorPosition, cursorPosition);
+          });
         },
         [onQuickCodeChange]
       );
