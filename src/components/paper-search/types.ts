@@ -28,14 +28,14 @@ export interface PaperSearchHandles {
   focusQuickSearch: () => void;
 }
 
+export type DocumentType = "qp" | "ms" | "er" | "gt";
+
 export interface PaperSearchProps {
-  paperType: "qp" | "ms";
-  onLinkGenerated: (
-    link: string | null,
-    details: PaperDetails | undefined,
-    showDialog?: boolean,
-    isQuickSearch?: boolean
+  onSubmit: (
+    formValues: FormValues,
+    options?: { showDialog?: boolean; isQuickSearch?: boolean }
   ) => void;
+  onClear: () => void;
   isClearData: boolean;
   setIsClearData: (isClearData: boolean) => void;
   preferencesLoaded?: boolean;

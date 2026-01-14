@@ -27,12 +27,12 @@ import {
   loadQuickSearchValues,
   clearAllValues,
 } from "@/lib/storage";
+import { generateQuickCode, isFormComplete } from "@/lib/url-generator";
 import type {
   FormValues,
   FormErrors,
   PaperSearchHandles,
   PaperSearchProps,
-  PaperDetails,
 } from "@/components/paper-search/types";
 import { NumberInputWithButtons } from "./paper-search/NumberInputWithButtons";
 import { SelectField } from "./paper-search/SelectField";
@@ -44,8 +44,8 @@ export type { PaperSearchHandles } from "@/components/paper-search/types";
 const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
   (
     {
-      paperType,
-      onLinkGenerated,
+      onSubmit,
+      onClear,
       isClearData,
       setIsClearData,
       preferencesLoaded = true,
@@ -53,7 +53,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
     },
     ref
   ) => {
-    // Form state
     const [formValues, setFormValues] = useState<FormValues>({
       curriculum: "cambridge-international-a-level",
       subject: "",
@@ -71,12 +70,8 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
     // Refs for tracking state
     const quickSearchInputRef = useRef<HTMLInputElement>(null);
-    const hasMountedRef = useRef(false);
-    const hasGeneratedInitialUrl = useRef(false);
-    const quickSearchUsedRef = useRef(false);
+    const hasLoadedRef = useRef(false);
     const pendingSubjectRef = useRef<string | null>(null);
-    const previousCurriculumRef = useRef<string | null>(null);
-    const isInitializedRef = useRef(false);
 
     // Expose focus method to parent
     useImperativeHandle(
@@ -98,63 +93,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       [formValues.curriculum]
     );
 
-    // Generate quick code from form values
-    const generateQuickCode = useCallback((values: FormValues): string => {
-      const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
-      if (!selectedSubject) return "";
-
-      let seasonCode = "";
-      if (values.season === "s") seasonCode = "M/J";
-      else if (values.season === "w") seasonCode = "O/N";
-      else if (values.season === "m") seasonCode = "F/M";
-
-      const paperNumber = `${values.paperType}${values.variant}`;
-      return `${selectedSubject.code}/${paperNumber}/${seasonCode}/${values.year}`;
-    }, []);
-
-    // Generate URL and call onLinkGenerated
-    const generateUrl = useCallback(
-      (
-        values: FormValues,
-        showDialog: boolean,
-        isQuickSearch: boolean,
-        updateQuickSearch: boolean
-      ) => {
-        const selectedSubject = SUBJECTS.find((s) => s.id === values.subject);
-        if (!selectedSubject) return;
-
-        const subjectCode = selectedSubject.code;
-        const seasonId = values.season;
-        const year = `20${values.year}`;
-        const shortYear = values.year;
-        const paperNumber = `${values.paperType}${values.variant}`;
-
-        const url = `https://bestexamhelp.com/exam/${values.curriculum}/${values.subject}/${year}/${subjectCode}_${seasonId}${shortYear}_${paperType}_${paperNumber}.pdf`;
-
-        const seasonObj = seasonS.find((s) => s.id === seasonId);
-        const seasonLabel = seasonObj ? seasonObj.label : "";
-
-        const details: PaperDetails = {
-          subjectCode: selectedSubject.code,
-          subjectName: selectedSubject.label,
-          paperNumber,
-          season: seasonLabel,
-          year: shortYear,
-        };
-
-        hasGeneratedInitialUrl.current = true;
-        onLinkGenerated(url, details, showDialog, isQuickSearch);
-
-        // Update quick code
-        if (updateQuickSearch) {
-          const newQuickCode = generateQuickCode(values);
-          setQuickCode(newQuickCode);
-          setQuickCodeError("");
-        }
-      },
-      [paperType, onLinkGenerated, generateQuickCode]
-    );
-
     // Update a single form field
     const updateFormField = useCallback(
       (field: keyof FormValues, value: string) => {
@@ -168,7 +106,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
     );
 
     const handleCurriculumChange = useCallback((value: string) => {
-      // Reset subject when curriculum changes
       setFormValues((prev) => {
         const newValues = { ...prev, curriculum: value, subject: "" };
         saveFormValues(newValues);
@@ -176,7 +113,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       });
     }, []);
 
-    // Handle subject change
     const handleSubjectChange = useCallback(
       (value: string) => {
         updateFormField("subject", value);
@@ -184,7 +120,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       [updateFormField]
     );
 
-    // Handle season change
     const handleSeasonChange = useCallback(
       (value: string) => {
         updateFormField("season", value);
@@ -192,7 +127,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       [updateFormField]
     );
 
-    // Handle paper type change
     const handlePaperTypeChange = useCallback(
       (value: string) => {
         const numericValue = value.replace(/\D/g, "").slice(0, 1);
@@ -203,7 +137,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       [updateFormField]
     );
 
-    // Handle variant change
     const handleVariantChange = useCallback(
       (value: string) => {
         const numericValue = value.replace(/\D/g, "").slice(0, 1);
@@ -214,7 +147,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       [updateFormField]
     );
 
-    // Handle year change
     const handleYearChange = useCallback(
       (value: string) => {
         const numericValue = value.replace(/\D/g, "").slice(0, 4);
@@ -283,21 +215,8 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
     // Check if form is valid
     const isFormValid = useMemo(() => {
-      const yearNum = formValues.year ? parseInt(`20${formValues.year}`) : 0;
       const hasErrors = Object.values(errors).some((e) => e);
-
-      return !!(
-        formValues.curriculum &&
-        formValues.subject &&
-        formValues.paperType?.length === 1 &&
-        formValues.paperType !== "0" &&
-        formValues.variant?.length === 1 &&
-        formValues.season &&
-        formValues.year?.length === 2 &&
-        yearNum >= 2009 &&
-        yearNum <= new Date().getFullYear() &&
-        !hasErrors
-      );
+      return isFormComplete(formValues) && !hasErrors;
     }, [formValues, errors]);
 
     // Memoized renderOption callbacks
@@ -313,7 +232,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       []
     );
 
-    // Memoized submit button class name
     const submitButtonClassName = useMemo(
       () =>
         `w-full p-2 text-white rounded-md cursor-pointer bg-primary dark:bg-white dark:text-black ${
@@ -322,13 +240,8 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
       [isFormValid]
     );
 
-    // Memoized paper type error
     const paperTypeError = useMemo(() => errors.paperType, [errors.paperType]);
-
-    // Memoized variant error
     const variantError = useMemo(() => errors.variant, [errors.variant]);
-
-    // Memoized year error
     const yearError = useMemo(() => errors.year, [errors.year]);
 
     // Handle quick code change
@@ -364,8 +277,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         return;
       }
 
-      quickSearchUsedRef.current = true;
-
       // Build new form values
       const newFormValues: FormValues = {
         curriculum: subject.curriculum,
@@ -388,9 +299,9 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         setFormValues(newFormValues);
         saveFormValues(newFormValues);
         setFullYear(`20${parsed.year}`);
-        generateUrl(newFormValues, true, true, true);
+        onSubmit(newFormValues, { showDialog: true, isQuickSearch: true });
       }
-    }, [quickCode, formValues.curriculum, generateUrl]);
+    }, [quickCode, formValues.curriculum, onSubmit]);
 
     // Handle form submission
     const handleFormSubmit = useCallback(
@@ -398,11 +309,15 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         e.preventDefault();
         if (!isFormValid) return;
 
-        quickSearchUsedRef.current = false;
         saveFormValues(formValues);
-        generateUrl(formValues, true, false, true);
+        // Update quick code display to match form
+        const newQuickCode = generateQuickCode(formValues);
+        setQuickCode(newQuickCode);
+        setQuickCodeError("");
+
+        onSubmit(formValues, { showDialog: true, isQuickSearch: false });
       },
-      [formValues, isFormValid, generateUrl]
+      [formValues, isFormValid, onSubmit]
     );
 
     // Handle clear data
@@ -422,14 +337,12 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         setErrors({});
         clearAllValues();
         setIsClearData(false);
-        quickSearchUsedRef.current = false;
-        hasGeneratedInitialUrl.current = false;
+        hasLoadedRef.current = false;
       }
     }, [isClearData, setIsClearData]);
 
-    // Handle pending subject after curriculum change
+    // Handle pending subject after curriculum change (for quick search)
     useEffect(() => {
-      if (!isInitializedRef.current) return;
       if (pendingSubjectRef.current) {
         const pendingSubject = pendingSubjectRef.current;
         const subjectExists = SUBJECTS.some(
@@ -438,7 +351,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
         );
 
         if (subjectExists) {
-          // Parse quick code again to get all values
           const parsed = parseQuickCode(quickCode);
           if (parsed) {
             const subject = SUBJECTS.find((s) => s.code === parsed.subjectCode);
@@ -454,22 +366,22 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
               setFormValues(newFormValues);
               saveFormValues(newFormValues);
               setFullYear(`20${parsed.year}`);
-              generateUrl(newFormValues, true, true, true);
+              onSubmit(newFormValues, {
+                showDialog: true,
+                isQuickSearch: true,
+              });
             }
           }
           pendingSubjectRef.current = null;
         }
       }
-      previousCurriculumRef.current = formValues.curriculum;
-    }, [formValues.curriculum, quickCode, generateUrl]);
+    }, [formValues.curriculum, quickCode, onSubmit]);
 
     // Load form values on mount
     useEffect(() => {
-      if (
-        preferencesLoaded &&
-        !hasGeneratedInitialUrl.current &&
-        !hasMountedRef.current
-      ) {
+      if (preferencesLoaded && !hasLoadedRef.current) {
+        hasLoadedRef.current = true;
+
         // Load quick search values
         loadQuickSearchValues().then((savedQuickCode) => {
           if (savedQuickCode) {
@@ -490,35 +402,18 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
                   : savedValues.year
               );
             }
-            setTimeout(() => {
-              isInitializedRef.current = true;
-            }, 0);
 
-            // Generate URL if all values are present
-            if (
-              savedValues.subject &&
-              savedValues.paperType &&
-              savedValues.variant &&
-              savedValues.season &&
-              savedValues.year
-            ) {
-              setTimeout(() => {
-                generateUrl(
-                  savedValues,
-                  showDialogOnLoad ?? false,
-                  false,
-                  false
-                );
-              }, 0);
+            // If form is complete and showDialogOnLoad is true, submit
+            if (isFormComplete(savedValues) && showDialogOnLoad) {
+              onSubmit(savedValues, { showDialog: true, isQuickSearch: false });
             }
           }
         });
       }
-    }, [preferencesLoaded, showDialogOnLoad, generateUrl]);
+    }, [preferencesLoaded, showDialogOnLoad, onSubmit]);
 
     return (
       <div className="space-y-6 w-full">
-        {/* Quick Search Section */}
         <QuickSearchSection
           ref={quickSearchInputRef}
           quickCode={quickCode}
@@ -526,8 +421,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
           onSubmit={handleQuickCodeSubmit}
           error={quickCodeError}
         />
-
-        {/* Manual Input Form */}
         <form
           onSubmit={handleFormSubmit}
           className="space-y-4 w-full border-2 p-5 mb-4 rounded-sm"
@@ -536,7 +429,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
             Manual Input
           </Label>
 
-          {/* Curriculum Select */}
           <SelectField
             id="curriculum"
             label="Curriculum"
@@ -546,7 +438,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
             placeholder="Select curriculum"
           />
 
-          {/* Subject Select */}
           <SelectField
             id="subject"
             label="Subject"
@@ -559,7 +450,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
 
           <div className="grid grid-cols-1 gap-4 w-full">
             <div className="flex items-center justify-between gap-6">
-              {/* Paper Type */}
               <div className="w-1/2">
                 <NumberInputWithButtons
                   id="paperType"
@@ -573,7 +463,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
                 />
               </div>
 
-              {/* Variant */}
               <div className="w-1/2">
                 <NumberInputWithButtons
                   id="variant"
@@ -588,7 +477,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
               </div>
             </div>
 
-            {/* Season Select */}
             <SelectField
               id="season"
               label="Exam Season"
@@ -599,7 +487,6 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
               renderOption={renderSeasonOption}
             />
 
-            {/* Year */}
             <NumberInputWithButtons
               id="year"
               label="Year"
@@ -624,8 +511,7 @@ const PaperSearchInner = forwardRef<PaperSearchHandles, PaperSearchProps>(
           </div>
         </form>
 
-        {/* Clear All Button */}
-        <ClearButton onClick={setIsClearData} />
+        <ClearButton onClick={onClear} />
       </div>
     );
   }
@@ -637,17 +523,13 @@ PaperSearchInner.displayName = "PaperSearch";
 const ClearButton = memo(function ClearButton({
   onClick,
 }: {
-  onClick: (value: boolean) => void;
+  onClick: () => void;
 }) {
-  const handleClick = useCallback(() => {
-    onClick(true);
-  }, [onClick]);
-
   return (
     <button
       type="button"
       className="w-full p-2 text-white bg-red-600 hover:bg-red-700 rounded-md cursor-pointer flex items-center justify-center"
-      onClick={handleClick}
+      onClick={onClick}
     >
       Clear All
       <XCircle className="w-4 h-4 ml-2" />
@@ -657,5 +539,4 @@ const ClearButton = memo(function ClearButton({
 
 ClearButton.displayName = "ClearButton";
 
-// Export memoized PaperSearch component
 export const PaperSearch = memo(PaperSearchInner);

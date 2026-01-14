@@ -12,15 +12,14 @@ import {
 import { ModeToggle } from "@/components/mode-toggle";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  PaperDetails,
-  PaperDetailsWithLink,
-} from "@/components/paper-search/types";
+import type { FormValues, DocumentType } from "@/components/paper-search/types";
 import { loadPreferences, savePreference } from "@/lib/storage";
-import { openInNewTab, getMarkingSchemeLink } from "@/lib/utils";
+import { openInNewTab } from "@/lib/utils";
+import { generatePaperUrl } from "@/lib/url-generator";
 
 export function App() {
-  const [paperDetails, setPaperDetails] = useState<PaperDetailsWithLink | null>(
+  // Store form values to generate URLs on-demand when buttons are clicked
+  const [currentFormValues, setCurrentFormValues] = useState<FormValues | null>(
     null
   );
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,13 +28,12 @@ export function App() {
   const [showDialogOnLoad, setShowDialogOnLoad] = useState(false);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const paperSearchRef = useRef<PaperSearchHandles>(null);
-  const quickSearchUsed = useRef(false);
+  const quickSearchUsedRef = useRef(false);
 
   // Load settings from storage on component mount
   useEffect(() => {
     const initPreferences = async () => {
       const preferences = await loadPreferences();
-
       setShowPinRecommendation(!preferences.hidePinRecommendation);
 
       // Validate year from form values
@@ -70,65 +68,56 @@ export function App() {
     savePreference("showDialogOnLoad", checked);
   }, []);
 
-  // Handle paper details generation
-  const handlePaperGenerated = useCallback(
+  // Handle form submission - stores form values for on-demand URL generation
+  const handleFormSubmit = useCallback(
     (
-      link: string | null,
-      details?: Omit<PaperDetails, "link">,
-      showDialog?: boolean,
-      isQuickSearch?: boolean
+      formValues: FormValues,
+      options?: { showDialog?: boolean; isQuickSearch?: boolean }
     ) => {
-      if (!link) {
-        setPaperDetails(null);
-        return;
-      }
+      quickSearchUsedRef.current = options?.isQuickSearch || false;
+      setCurrentFormValues(formValues);
 
-      // Update quickSearchUsed based on value passed from PaperSearch component
-      quickSearchUsed.current = isQuickSearch || false;
-
-      // Only update paperDetails if needed
-      setPaperDetails((prev) => {
-        if (!prev || prev.link !== link) {
-          return {
-            link,
-            ...details!,
-          };
-        }
-        return prev; // Don't update if it's the same
-      });
-
-      // Handle dialog opening with a ref to avoid unnecessary renders
-      const shouldOpenDialog =
-        showDialog === true ||
-        (showDialog === undefined && showDialogOnLoad === true);
-
-      if (shouldOpenDialog && !dialogOpen) {
+      if (options?.showDialog) {
         setDialogOpen(true);
       }
     },
-    [dialogOpen, showDialogOnLoad]
+    []
   );
 
-  // Modify the Dialog component to use a better onOpenChange handler
-  const handleDialogOpenChange = useCallback(
-    (open: boolean) => {
-      setDialogOpen(open);
+  // Handle dialog open/close
+  const handleDialogOpenChange = useCallback((open: boolean) => {
+    setDialogOpen(open);
 
-      // Only focus on quick search input when dialog closes AND quick search was used
-      if (!open && paperSearchRef.current && quickSearchUsed.current) {
-        paperSearchRef.current?.focusQuickSearch();
-      }
-    },
-    [paperSearchRef]
-  );
+    // Focus quick search input when dialog closes if quick search was used
+    if (!open && quickSearchUsedRef.current) {
+      paperSearchRef.current?.focusQuickSearch();
+    }
+  }, []);
 
   // Handle clear data action
   const handleClearData = useCallback(() => {
-    setPaperDetails(null);
+    setCurrentFormValues(null);
     setIsClearData(true);
-    handleDialogOpenChange(false);
-    quickSearchUsed.current = false;
-  }, [handleDialogOpenChange]);
+    setDialogOpen(false);
+    quickSearchUsedRef.current = false;
+  }, []);
+
+  // Open paper URL with specific document type
+  const openPaper = useCallback(
+    (docType: DocumentType) => {
+      if (!currentFormValues) return;
+      const result = generatePaperUrl(currentFormValues, docType);
+      if (result) {
+        openInNewTab(result.url);
+      }
+    },
+    [currentFormValues]
+  );
+
+  // Get paper details for display (generate once for display purposes)
+  const paperDetails = currentFormValues
+    ? generatePaperUrl(currentFormValues, "qp")?.paperDetails
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col justify-between w-full items-center bg-white dark:bg-primary-foreground">
@@ -149,15 +138,15 @@ export function App() {
 
       <Card className="mx-auto border-none shadow-none pb-8! w-full">
         <CardContent className="p-0!">
-          <h2 className="text-xl font-semibold mb-6 text-center bg-linear-to-r from-slate-900 to-slate-700 text-white py-3 px-4  shadow-md">
+          <h2 className="text-xl font-semibold mb-6 text-center bg-linear-to-r from-slate-900 to-slate-700 text-white py-3 px-4 shadow-md">
             <span className="text-red-500 font-bold">CAIE</span> IGCSE/A-Level
             Past Papers Search
           </h2>
           <div className="max-w-xl mx-auto px-7">
             <PaperSearch
               ref={paperSearchRef}
-              paperType="qp"
-              onLinkGenerated={handlePaperGenerated}
+              onSubmit={handleFormSubmit}
+              onClear={handleClearData}
               isClearData={isClearData}
               setIsClearData={setIsClearData}
               preferencesLoaded={preferencesLoaded}
@@ -169,7 +158,7 @@ export function App() {
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent
-          className="w-[90%] "
+          className="w-[90%]"
           aria-describedby="paper-details-description"
         >
           <DialogHeader>
@@ -177,13 +166,13 @@ export function App() {
           </DialogHeader>
 
           {paperDetails && (
-            <div className="space-y-6">
+            <div className="flex flex-col gap-4">
               <div id="paper-details-description" className="sr-only">
                 Details for {paperDetails.subjectName} (
                 {paperDetails.subjectCode}) paper from {paperDetails.season} 20
                 {paperDetails.year}
               </div>
-              <div className="bg-muted p-4 rounded-lg mb-4">
+              <div className="bg-muted p-4 rounded-lg">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-sm text-muted-foreground">Subject:</div>
                   <div className="text-sm font-medium">
@@ -217,36 +206,49 @@ export function App() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-2 flex-wrap">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
-                  onClick={() =>
-                    openInNewTab(getMarkingSchemeLink(paperDetails.link))
-                  }
+                  className="flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => openPaper("qp")}
                 >
-                  Open Marking Scheme
-                  <ExternalLink size={18} />
+                  Question Paper
+                  <ExternalLink size={16} />
                 </Button>
-
                 <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
-                  onClick={() => openInNewTab(paperDetails.link)}
+                  className="flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => openPaper("ms")}
                 >
-                  Open Question Paper
-                  <ExternalLink size={18} />
+                  Mark Scheme
+                  <ExternalLink size={16} />
                 </Button>
-
                 <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full"
-                  onClick={() => {
-                    handleDialogOpenChange(false);
-                  }}
+                  className="flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => openPaper("er")}
+                >
+                  Examiner Report
+                  <ExternalLink size={16} />
+                </Button>
+                <Button
+                  className="flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => openPaper("gt")}
+                >
+                  Grade Threshold
+                  <ExternalLink size={16} />
+                </Button>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  className="flex items-center justify-center gap-2 cursor-pointer flex-1"
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
                 >
                   Close
                   <X size={18} />
                 </Button>
                 <Button
-                  className="flex items-center justify-center gap-2 cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white"
+                  className="flex items-center justify-center gap-2 cursor-pointer flex-1 bg-red-600 hover:bg-red-700 text-white"
                   onClick={handleClearData}
                 >
                   Clear Data
@@ -278,7 +280,7 @@ export function App() {
         </DialogContent>
       </Dialog>
 
-      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-primary-foreground  p-4 w-full">
+      <div className="text-center flex items-center flex-col justify-center gap-2 bg-gray-100 dark:bg-primary-foreground p-4 w-full">
         <div className="flex items-center justify-center gap-2 w-full">
           <a
             href="https://noteoverflow.com"

@@ -13,8 +13,3 @@ export const openInNewTab = (url: string): void => {
   a.rel = "noopener noreferrer";
   a.click();
 };
-
-// Convert question paper link to marking scheme link
-export const getMarkingSchemeLink = (qpLink: string): string => {
-  return qpLink.replace("_qp_", "_ms_");
-};
